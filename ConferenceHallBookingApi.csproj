@@ -23,8 +23,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Validators\" />
-    <Folder Include="Services\" />
+    <Folder Include="ConferenceHallBooking.Api\Controllers\" />
+    <Folder Include="ConferenceHallBooking.Application\Validators\" />
+    <Folder Include="ConferenceHallBooking.Application\Services\" />
   </ItemGroup>
 
 </Project>

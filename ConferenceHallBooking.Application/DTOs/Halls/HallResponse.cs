@@ -1,6 +1,6 @@
-﻿using ConferenceHallBookingApi.DTOs.Options;
+﻿using ConferenceHallBookingApi.ConferenceHallBooking.Application.DTOs.Options;
 
-namespace ConferenceHallBookingApi.DTOs.Halls;
+namespace ConferenceHallBookingApi.ConferenceHallBooking.Application.DTOs.Halls;
 
 public class HallResponse
 {

@@ -1,4 +1,4 @@
-﻿namespace ConferenceHallBookingApi.DTOs.Bookings;
+﻿namespace ConferenceHallBookingApi.ConferenceHallBooking.Application.DTOs.Bookings;
 
 public class CreateBookingRequest
 {

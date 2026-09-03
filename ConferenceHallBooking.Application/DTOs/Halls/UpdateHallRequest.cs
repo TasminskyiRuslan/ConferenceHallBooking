@@ -1,4 +1,4 @@
-﻿namespace ConferenceHallBookingApi.DTOs.Halls;
+﻿namespace ConferenceHallBookingApi.ConferenceHallBooking.Application.DTOs.Halls;
 
 public class UpdateHallRequest
 {

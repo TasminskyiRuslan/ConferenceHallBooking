@@ -1,4 +1,4 @@
-﻿namespace ConferenceHallBookingApi.DTOs.Options;
+﻿namespace ConferenceHallBookingApi.ConferenceHallBooking.Application.DTOs.Options;
 
 public class OptionResponse
 {
