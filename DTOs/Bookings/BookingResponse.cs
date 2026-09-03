@@ -1,4 +1,4 @@
-﻿using ConferenceHallBookingApi.DTOs.Services;
+﻿using ConferenceHallBookingApi.DTOs.Options;
 
 namespace ConferenceHallBookingApi.DTOs.Bookings;
 
@@ -12,6 +12,6 @@ public class BookingResponse
     public DateTimeOffset StartTime { get; set; }
     public DateTimeOffset EndTime { get; set; }
     public int DurationHours { get; set; }
-    public List<ServiceResponse> SelectedServices { get; set; } = new();
+    public List<OptionResponse> SelectedOptions { get; set; } = new();
     public decimal TotalPrice { get; set; }
 }

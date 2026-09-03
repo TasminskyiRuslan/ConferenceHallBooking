@@ -1,6 +1,6 @@
-﻿namespace ConferenceHallBookingApi.DTOs.Services;
+﻿namespace ConferenceHallBookingApi.DTOs.Options;
 
-public class ServiceResponse
+public class OptionResponse
 {
     public long Id { get; set; }
     public string Name { get; set; } = string.Empty;

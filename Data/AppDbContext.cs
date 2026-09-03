@@ -10,10 +10,10 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Hall> Halls => Set<Hall>();
-    public DbSet<Service> Services => Set<Service>();
-    public DbSet<HallService> HallServices => Set<HallService>();
+    public DbSet<Option> Options => Set<Option>();
+    public DbSet<HallOption> HallOptions => Set<HallOption>();
     public DbSet<Booking> Bookings => Set<Booking>();
-    public DbSet<BookingService> BookingServices => Set<BookingService>();
+    public DbSet<BookingOption> BookingOptions => Set<BookingOption>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,9 +25,9 @@ public class AppDbContext : DbContext
             entity.Property(h => h.BaseHourlyRate).HasPrecision(18, 2);
         });
 
-        modelBuilder.Entity<Service>(entity =>
+        modelBuilder.Entity<Option>(entity =>
         {
-            entity.Property(s => s.Price).HasPrecision(18, 2);
+            entity.Property(o => o.Price).HasPrecision(18, 2);
         });
 
         modelBuilder.Entity<Booking>(entity =>
@@ -40,33 +40,33 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<HallService>(entity =>
+        modelBuilder.Entity<HallOption>(entity =>
         {
-            entity.HasKey(hs => new { hs.HallId, hs.ServiceId });
+            entity.HasKey(ho => new { ho.HallId, ho.OptionId });
 
-            entity.HasOne(hs => hs.Hall)
-                .WithMany(h => h.HallServices)
-                .HasForeignKey(hs => hs.HallId)
+            entity.HasOne(ho => ho.Hall)
+                .WithMany(h => h.HallOptions)
+                .HasForeignKey(ho => ho.HallId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(hs => hs.Service)
-                .WithMany(s => s.HallServices)
-                .HasForeignKey(hs => hs.ServiceId)
+            entity.HasOne(ho => ho.Option)
+                .WithMany(o => o.HallOptions)
+                .HasForeignKey(ho => ho.OptionId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<BookingService>(entity =>
+        modelBuilder.Entity<BookingOption>(entity =>
         {
-            entity.HasKey(bs => new { bs.BookingId, bs.ServiceId });
+            entity.HasKey(bo => new { bo.BookingId, bo.OptionId });
 
-            entity.HasOne(bs => bs.Booking)
-                .WithMany(b => b.BookingServices)
-                .HasForeignKey(bs => bs.BookingId)
+            entity.HasOne(bo => bo.Booking)
+                .WithMany(b => b.BookingOptions)
+                .HasForeignKey(bo => bo.BookingId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(bs => bs.Service)
+            entity.HasOne(bo => bo.Option)
                 .WithMany()
-                .HasForeignKey(bs => bs.ServiceId)
+                .HasForeignKey(bo => bo.OptionId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

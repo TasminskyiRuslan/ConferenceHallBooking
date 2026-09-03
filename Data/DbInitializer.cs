@@ -14,11 +14,11 @@ public static class DbInitializer
             return;
         }
 
-        var projector = new Service { Name = "Проєктор", Price = 500m };
-        var wifi = new Service { Name = "Wi-Fi", Price = 300m };
-        var sound = new Service { Name = "Звук", Price = 700m };
+        var projector = new Option { Name = "Проєктор", Price = 500m };
+        var wifi = new Option { Name = "Wi-Fi", Price = 300m };
+        var sound = new Option { Name = "Звук", Price = 700m };
 
-        await context.Services.AddRangeAsync(projector, wifi, sound);
+        await context.Options.AddRangeAsync(projector, wifi, sound);
         await context.SaveChangesAsync();
 
         var hallA = new Hall { Name = "Зал А", Capacity = 50, BaseHourlyRate = 2000m };
@@ -28,22 +28,22 @@ public static class DbInitializer
         await context.Halls.AddRangeAsync(hallA, hallB, hallC);
         await context.SaveChangesAsync();
 
-        var hallServices = new List<HallService>
+        var hallOptions = new List<HallOption>
         {
-            new() { HallId = hallA.Id, ServiceId = projector.Id },
-            new() { HallId = hallA.Id, ServiceId = wifi.Id },
-            new() { HallId = hallA.Id, ServiceId = sound.Id },
+            new() { HallId = hallA.Id, OptionId = projector.Id },
+            new() { HallId = hallA.Id, OptionId = wifi.Id },
+            new() { HallId = hallA.Id, OptionId = sound.Id },
 
-            new() { HallId = hallB.Id, ServiceId = projector.Id },
-            new() { HallId = hallB.Id, ServiceId = wifi.Id },
-            new() { HallId = hallB.Id, ServiceId = sound.Id },
+            new() { HallId = hallB.Id, OptionId = projector.Id },
+            new() { HallId = hallB.Id, OptionId = wifi.Id },
+            new() { HallId = hallB.Id, OptionId = sound.Id },
 
-            new() { HallId = hallC.Id, ServiceId = projector.Id },
-            new() { HallId = hallC.Id, ServiceId = wifi.Id },
-            new() { HallId = hallC.Id, ServiceId = sound.Id }
+            new() { HallId = hallC.Id, OptionId = projector.Id },
+            new() { HallId = hallC.Id, OptionId = wifi.Id },
+            new() { HallId = hallC.Id, OptionId = sound.Id }
         };
 
-        await context.HallServices.AddRangeAsync(hallServices);
+        await context.HallOptions.AddRangeAsync(hallOptions);
         await context.SaveChangesAsync();
     }
 }

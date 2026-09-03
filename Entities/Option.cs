@@ -1,12 +1,10 @@
 ﻿namespace ConferenceHallBookingApi.Entities;
 
-public class Hall
+public class Option
 {
     public long Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public int Capacity { get; set; }
-    public decimal BaseHourlyRate { get; set; }
+    public decimal Price { get; set; }
 
     public ICollection<HallOption> HallOptions { get; set; } = new List<HallOption>();
-    public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }
