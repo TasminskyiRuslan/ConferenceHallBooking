@@ -1,10 +1,7 @@
-﻿namespace ConferenceHallBookingApi.ConferenceHallBooking.Application.DTOs.Bookings;
+﻿namespace ConferenceHallBooking.Application.DTOs.Bookings;
 
-public class CreateBookingRequest
-{
-    public long HallId { get; set; }
-    public DateOnly Date { get; set; }
-    public TimeOnly StartTime { get; set; }
-    public int DurationHours { get; set; }
-    public List<long> OptionIds { get; set; } = new();
-}
+public record CreateBookingRequest(
+    Guid HallId,
+    DateTimeOffset StartTime,
+    int DurationHours,
+    List<Guid> OptionIds);

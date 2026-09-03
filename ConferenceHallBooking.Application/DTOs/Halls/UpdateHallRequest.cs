@@ -1,9 +1,7 @@
-﻿namespace ConferenceHallBookingApi.ConferenceHallBooking.Application.DTOs.Halls;
+﻿namespace ConferenceHallBooking.Application.DTOs.Halls;
 
-public class UpdateHallRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public int Capacity { get; set; }
-    public decimal BaseHourlyRate { get; set; }
-    public List<long> OptionIds { get; set; } = new();
-}
+public record UpdateHallRequest(
+    string Name,
+    int Capacity,
+    decimal BaseHourlyRate,
+    List<Guid> OptionIds);
