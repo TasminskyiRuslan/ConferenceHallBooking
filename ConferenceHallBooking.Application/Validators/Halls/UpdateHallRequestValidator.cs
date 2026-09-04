@@ -15,6 +15,6 @@ public class UpdateHallRequestValidator : AbstractValidator<UpdateHallRequest>
             .GreaterThan(0).WithMessage("Capacity must be greater than zero.");
 
         RuleFor(x => x.BaseHourlyRate)
-            .GreaterThanOrEqualTo(0).WithMessage("Base hourly rate cannot be negative.");
+            .GreaterThan(0).WithMessage("Base hourly rate cannot be negative.");
     }
 }

@@ -1,6 +1,11 @@
 <Solution>
-  <Project Path="ConferenceHallBooking.Api/ConferenceHallBooking.Api.csproj" />
-  <Project Path="ConferenceHallBooking.Application/ConferenceHallBooking.Application.csproj" />
-  <Project Path="ConferenceHallBooking.Domain/ConferenceHallBooking.Domain.csproj" />
-  <Project Path="ConferenceHallBooking.Infrastructure/ConferenceHallBooking.Infrastructure.csproj" />
+  <Folder Name="/src/">
+    <Project Path="ConferenceHallBooking.Api/ConferenceHallBooking.Api.csproj" />
+    <Project Path="ConferenceHallBooking.Application/ConferenceHallBooking.Application.csproj" />
+    <Project Path="ConferenceHallBooking.Domain/ConferenceHallBooking.Domain.csproj" />
+    <Project Path="ConferenceHallBooking.Infrastructure/ConferenceHallBooking.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="ConferenceHallBooking.UnitTests/ConferenceHallBooking.UnitTests.csproj" Id="3ae1a7c7-6144-4586-98e5-064678eb2dc0" />
+  </Folder>
 </Solution>
