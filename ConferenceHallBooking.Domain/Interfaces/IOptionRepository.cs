@@ -4,5 +4,5 @@ namespace ConferenceHallBooking.Domain.Interfaces;
 
 public interface IOptionRepository
 {
-    Task<IEnumerable<Option>> GetByIdsAsync(IEnumerable<long> ids, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Option>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
 }

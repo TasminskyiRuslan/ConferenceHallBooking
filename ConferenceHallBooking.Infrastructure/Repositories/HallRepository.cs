@@ -14,7 +14,7 @@ public class HallRepository : IHallRepository
         _context = context;
     }
 
-    public async Task<Hall?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+    public async Task<Hall?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.Halls
             .Include(h => h.HallOptions)

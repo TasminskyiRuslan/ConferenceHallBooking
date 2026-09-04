@@ -15,7 +15,7 @@ public class BookingRepository : IBookingRepository
     }
 
     public async Task<bool> HasOverlappingBookingAsync(
-        long hallId,
+        Guid hallId,
         DateTimeOffset startTime,
         DateTimeOffset endTime,
         CancellationToken cancellationToken = default)

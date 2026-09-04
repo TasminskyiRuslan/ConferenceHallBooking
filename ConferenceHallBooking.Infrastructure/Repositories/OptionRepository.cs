@@ -14,7 +14,7 @@ public class OptionRepository : IOptionRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Option>> GetByIdsAsync(IEnumerable<long> ids, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Option>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
         return await _context.Options
             .Where(o => ids.Contains(o.Id))

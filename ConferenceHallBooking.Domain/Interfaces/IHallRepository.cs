@@ -4,7 +4,7 @@ namespace ConferenceHallBooking.Domain.Interfaces;
 
 public interface IHallRepository
 {
-    Task<Hall?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
+    Task<Hall?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IEnumerable<Hall>> GetAvailableHallsAsync(
         DateTimeOffset startTime,
         DateTimeOffset endTime,

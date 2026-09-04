@@ -7,18 +7,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddControllers();
+// 2. Реєструємо ініціалізатор у DI-контейнері
+builder.Services.AddScoped<IDbInitializer, DbInitializer>();
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// 3. Дістаємо IDbInitializer із DI та викликаємо SeedAsync без передачі context
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await DbInitializer.SeedAsync(context);
+    var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+    await initializer.SeedAsync();
 }
 
 // Configure the HTTP request pipeline.
@@ -29,9 +31,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

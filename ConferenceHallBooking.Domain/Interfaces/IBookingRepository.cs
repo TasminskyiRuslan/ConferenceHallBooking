@@ -5,7 +5,7 @@ namespace ConferenceHallBooking.Domain.Interfaces;
 public interface IBookingRepository
 {
     Task<bool> HasOverlappingBookingAsync(
-        long hallId,
+        Guid hallId,
         DateTimeOffset startTime,
         DateTimeOffset endTime,
         CancellationToken cancellationToken = default);

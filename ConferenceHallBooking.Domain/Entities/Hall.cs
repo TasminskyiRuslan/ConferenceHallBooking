@@ -2,7 +2,7 @@
 
 public class Hall
 {
-    public long Id { get; private set; }
+    public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public int Capacity { get; private set; }
     public decimal BaseHourlyRate { get; private set; }
@@ -17,6 +17,7 @@ public class Hall
 
     public Hall(string name, int capacity, decimal baseHourlyRate)
     {
+        Id = Guid.NewGuid();
         Update(name, capacity, baseHourlyRate);
     }
 
@@ -36,7 +37,7 @@ public class Hall
         BaseHourlyRate = baseHourlyRate;
     }
 
-    public void AddOption(long optionId)
+    public void AddOption(Guid optionId)
     {
         if (!_hallOptions.Any(o => o.OptionId == optionId))
         {
@@ -44,7 +45,7 @@ public class Hall
         }
     }
 
-    public void RemoveOption(long optionId)
+    public void RemoveOption(Guid optionId)
     {
         var option = _hallOptions.FirstOrDefault(o => o.OptionId == optionId);
         if (option != null)
