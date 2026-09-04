@@ -3,5 +3,5 @@
 public record CreateBookingRequest(
     Guid HallId,
     DateTimeOffset StartTime,
-    int DurationHours,
+    decimal DurationHours,
     List<Guid>? OptionIds);

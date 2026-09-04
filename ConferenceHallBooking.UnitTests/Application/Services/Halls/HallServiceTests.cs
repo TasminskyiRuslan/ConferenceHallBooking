@@ -1,4 +1,6 @@
-﻿using ConferenceHallBooking.Application.DTOs.Halls;
+﻿namespace ConferenceHallBooking.UnitTests.Application.Services.Halls;
+
+using ConferenceHallBooking.Application.DTOs.Halls;
 using ConferenceHallBooking.Application.Exceptions;
 using ConferenceHallBooking.Application.Services.Halls;
 using ConferenceHallBooking.Domain.Entities;
@@ -7,8 +9,6 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
-
-namespace ConferenceHallBooking.UnitTests.Application.Services.Halls;
 
 public class HallServiceTests
 {
@@ -30,7 +30,7 @@ public class HallServiceTests
     public async Task CreateAsync_WithoutOptions_ShouldCreateHallAndSaveChanges()
     {
         // Arrange
-        var request = new CreateHallRequest("Grand Hall", 100, 250m, null);
+        var request = new CreateHallRequest("Grand Hall", 100, 250m, new List<Guid>());
 
         // Act
         var hallId = await _service.CreateAsync(request);
@@ -100,6 +100,29 @@ public class HallServiceTests
 
         await _hallRepository.DidNotReceive().AddAsync(Arg.Any<Hall>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenOptionIdsIsNull_ShouldCreateHallWithoutOptions()
+    {
+        // Arrange
+        var request = new CreateHallRequest("Grand Hall", 100, 250m, null!);
+
+        // Act
+        var hallId = await _service.CreateAsync(request);
+
+        // Assert
+        hallId.Should().NotBeEmpty();
+
+        await _optionRepository.DidNotReceive().GetByIdsAsync(
+            Arg.Any<IEnumerable<Guid>>(),
+            Arg.Any<CancellationToken>());
+
+        await _hallRepository.Received(1).AddAsync(
+            Arg.Is<Hall>(h => h.HallOptions.Count == 0),
+            Arg.Any<CancellationToken>());
+
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     #endregion
@@ -189,6 +212,60 @@ public class HallServiceTests
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task UpdateAsync_WhenOptionIdsIsEmpty_ShouldRemoveAllExistingOptionsWithoutCallingOptionRepo()
+    {
+        // Arrange
+        var hallId = Guid.NewGuid();
+        var existingHall = new Hall("Existing Hall", 50, 100m);
+        existingHall.AddOption(Guid.NewGuid());
+
+        var request = new UpdateHallRequest("Updated Hall", 60, 120m, new List<Guid>());
+
+        _hallRepository.GetByIdAsync(hallId, Arg.Any<CancellationToken>())
+            .Returns(existingHall);
+
+        // Act
+        await _service.UpdateAsync(hallId, request);
+
+        // Assert
+        existingHall.HallOptions.Should().BeEmpty();
+
+        await _optionRepository.DidNotReceive().GetByIdsAsync(
+            Arg.Any<IEnumerable<Guid>>(),
+            Arg.Any<CancellationToken>());
+
+        _hallRepository.Received(1).Update(existingHall);
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenOptionIdsIsNull_ShouldRemoveAllExistingOptionsWithoutThrowing()
+    {
+        // Arrange
+        var hallId = Guid.NewGuid();
+        var existingHall = new Hall("Existing Hall", 50, 100m);
+        existingHall.AddOption(Guid.NewGuid());
+
+        var request = new UpdateHallRequest("Updated Hall", 60, 120m, null!);
+
+        _hallRepository.GetByIdAsync(hallId, Arg.Any<CancellationToken>())
+            .Returns(existingHall);
+
+        // Act
+        await _service.UpdateAsync(hallId, request);
+
+        // Assert
+        existingHall.HallOptions.Should().BeEmpty();
+
+        await _optionRepository.DidNotReceive().GetByIdsAsync(
+            Arg.Any<IEnumerable<Guid>>(),
+            Arg.Any<CancellationToken>());
+
+        _hallRepository.Received(1).Update(existingHall);
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
     #endregion
 
     #region DeleteAsync Tests
@@ -261,6 +338,33 @@ public class HallServiceTests
         response.BaseHourlyRate.Should().Be(200m);
 
         await _hallRepository.Received(1).GetAvailableHallsAsync(start, end, 50, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SearchAvailableAsync_WhenHallHasOptions_ShouldMapOptionsCorrectly()
+    {
+        // Arrange
+        var start = DateTimeOffset.UtcNow.AddDays(1);
+        var end = start.AddHours(3);
+        var request = new SearchAvailableHallsRequest(start, end, 50);
+
+        var hall = new Hall("Available Hall", 100, 200m);
+        var option = new Option("Projector", 50m);
+
+        hall.AddOption(option.Id);
+
+        typeof(HallOption)
+            .GetProperty(nameof(HallOption.Option))?
+            .SetValue(hall.HallOptions.First(), option);
+
+        _hallRepository.GetAvailableHallsAsync(start, end, 50, Arg.Any<CancellationToken>())
+            .Returns(new List<Hall> { hall });
+
+        // Act
+        var result = await _service.SearchAvailableAsync(request);
+
+        // Assert
+        result.First().Options.Should().HaveCount(1);
     }
 
     #endregion

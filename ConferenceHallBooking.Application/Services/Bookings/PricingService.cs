@@ -55,12 +55,12 @@ public class PricingService : IPricingService
         }
 
         var optionsCost = selectedOptions?.Sum(option => option.Price) ?? 0m;
-        var totalCost = hallCost + optionsCost;
 
-        return new PricingResult(
-            Math.Round(hallCost, 2, MidpointRounding.AwayFromZero),
-            Math.Round(optionsCost, 2, MidpointRounding.AwayFromZero),
-            Math.Round(totalCost, 2, MidpointRounding.AwayFromZero));
+        var roundedHallCost = Math.Round(hallCost, 2, MidpointRounding.AwayFromZero);
+        var roundedOptionsCost = Math.Round(optionsCost, 2, MidpointRounding.AwayFromZero);
+        var roundedTotalCost = roundedHallCost + roundedOptionsCost;
+
+        return new PricingResult(roundedHallCost, roundedOptionsCost, roundedTotalCost);
     }
 
     private List<DateTimeOffset> GetBoundaryPoints(

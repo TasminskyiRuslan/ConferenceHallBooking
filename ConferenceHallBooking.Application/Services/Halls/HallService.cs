@@ -1,12 +1,12 @@
-﻿namespace ConferenceHallBooking.Application.Services.Halls;
-
-using ConferenceHallBooking.Application.DTOs.Halls;
+﻿using ConferenceHallBooking.Application.DTOs.Halls;
 using ConferenceHallBooking.Application.DTOs.Options;
 using ConferenceHallBooking.Application.Exceptions;
+using ConferenceHallBooking.Application.Interfaces.Halls;
 using ConferenceHallBooking.Domain.Entities;
 using ConferenceHallBooking.Domain.Interfaces;
-using ConferenceHallBookingApi.ConferenceHallBooking.Application.Interfaces.Halls;
 using Microsoft.Extensions.Logging;
+
+namespace ConferenceHallBooking.Application.Services.Halls;
 
 public class HallService : IHallService
 {
@@ -29,30 +29,31 @@ public class HallService : IHallService
 
     public async Task<Guid> CreateAsync(CreateHallRequest request, CancellationToken cancellationToken = default)
     {
+        var targetOptionIds = (request.OptionIds ?? []).Distinct().ToList();
+
+        if (targetOptionIds.Count > 0)
+        {
+            await GetOptionsOrThrowAsync(targetOptionIds, cancellationToken);
+        }
+
         var hall = new Hall(request.Name, request.Capacity, request.BaseHourlyRate);
 
-        if (request.OptionIds is { Count: > 0 })
+        foreach (var optionId in targetOptionIds)
         {
-            await ValidateOptionsExistAsync(request.OptionIds, cancellationToken);
-
-            foreach (var optionId in request.OptionIds.Distinct())
-            {
-                hall.AddOption(optionId);
-            }
+            hall.AddOption(optionId);
         }
 
         await _hallRepository.AddAsync(hall, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Conference hall '{HallName}' ({HallId}) was successfully created.", hall.Name, hall.Id);
+        _logger.LogInformation("Conference hall '{HallName}' with ID {HallId} was successfully created.", hall.Name, hall.Id);
 
         return hall.Id;
     }
 
     public async Task UpdateAsync(Guid id, UpdateHallRequest request, CancellationToken cancellationToken = default)
     {
-        var hall = await _hallRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException($"Conference hall with ID '{id}' was not found.");
+        var hall = await GetHallByIdOrThrowAsync(id, cancellationToken);
 
         hall.Update(request.Name, request.Capacity, request.BaseHourlyRate);
 
@@ -66,8 +67,7 @@ public class HallService : IHallService
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var hall = await _hallRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException($"Conference hall with ID '{id}' was not found.");
+        var hall = await GetHallByIdOrThrowAsync(id, cancellationToken);
 
         _hallRepository.Delete(hall);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -79,41 +79,57 @@ public class HallService : IHallService
         SearchAvailableHallsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var availableHalls = await _hallRepository.GetAvailableHallsAsync(
+        var availableHalls = (await _hallRepository.GetAvailableHallsAsync(
             request.StartTime,
             request.EndTime,
             request.Capacity,
-            cancellationToken);
+            cancellationToken)).ToList();
 
         _logger.LogInformation(
-            "Found {Count} available hall(s) for capacity >= {Capacity} between {Start} and {End}.",
-            availableHalls.Count(), request.Capacity, request.StartTime, request.EndTime);
+            "Found {Count} available conference hall(s) for capacity >= {Capacity} between {StartTime} and {EndTime}.",
+            availableHalls.Count, request.Capacity, request.StartTime, request.EndTime);
 
         return availableHalls.Select(MapToResponse).ToList().AsReadOnly();
     }
 
-    private async Task ValidateOptionsExistAsync(IEnumerable<Guid> optionIds, CancellationToken cancellationToken)
+    private async Task<Hall> GetHallByIdOrThrowAsync(Guid hallId, CancellationToken cancellationToken)
     {
-        var distinctIds = optionIds.Distinct().ToList();
-        var existingOptions = await _optionRepository.GetByIdsAsync(distinctIds, cancellationToken);
+        var hall = await _hallRepository.GetByIdAsync(hallId, cancellationToken);
 
-        if (existingOptions.Count() != distinctIds.Count)
+        if (hall is null)
         {
-            _logger.LogWarning("Attempted to assign one or more non-existent options to a hall.");
+            _logger.LogWarning("Conference hall with ID {HallId} was not found.", hallId);
+            throw new NotFoundException($"Conference hall with ID '{hallId}' was not found.");
+        }
+
+        return hall;
+    }
+
+    private async Task<IReadOnlyList<Option>> GetOptionsOrThrowAsync(
+        IReadOnlyCollection<Guid> distinctOptionIds,
+        CancellationToken cancellationToken)
+    {
+        var existingOptions = (await _optionRepository.GetByIdsAsync(distinctOptionIds, cancellationToken)).ToList();
+
+        if (existingOptions.Count != distinctOptionIds.Count)
+        {
+            _logger.LogWarning("Attempted to access one or more non-existent options.");
             throw new BusinessRuleException("One or more specified options do not exist.");
         }
+
+        return existingOptions;
     }
 
     private async Task SynchronizeHallOptionsAsync(
         Hall hall,
-        IReadOnlyCollection<Guid> targetOptionIds,
+        IEnumerable<Guid>? targetOptionIds,
         CancellationToken cancellationToken)
     {
-        var desiredIds = targetOptionIds.ToHashSet();
+        var desiredIds = (targetOptionIds ?? []).Distinct().ToHashSet();
 
         if (desiredIds.Count > 0)
         {
-            await ValidateOptionsExistAsync(desiredIds, cancellationToken);
+            await GetOptionsOrThrowAsync(desiredIds, cancellationToken);
         }
 
         var currentIds = hall.HallOptions.Select(ho => ho.OptionId).ToList();

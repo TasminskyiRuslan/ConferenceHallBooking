@@ -10,6 +10,8 @@ public record BookingResponse(
     decimal HallBaseHourlyRate,
     DateTimeOffset StartTime,
     DateTimeOffset EndTime,
-    int DurationHours,
-    List<OptionResponse> SelectedOptions,
+    decimal DurationHours,
+    IReadOnlyCollection<OptionResponse> SelectedOptions,
+    decimal HallCost,
+    decimal OptionsCost,
     decimal TotalCost);

@@ -192,4 +192,21 @@ public class PricingServiceTests
         // Assert
         result.HallCost.Should().Be(expectedHallCost);
     }
+
+    [Fact]
+    public void CalculatePrice_WhenOptionsListIsEmpty_ShouldReturnZeroOptionsCost()
+    {
+        // Arrange
+        var settings = Options.Create(new PricingSettings());
+        var service = new PricingService(settings);
+        var start = new DateTimeOffset(2026, 9, 10, 10, 0, 0, TimeSpan.Zero);
+        var end = start.AddHours(2);
+
+        // Act
+        var result = service.CalculatePrice(100m, new List<Option>(), start, end);
+
+        // Assert
+        result.OptionsCost.Should().Be(0m);
+        result.TotalCost.Should().Be(200m);
+    }
 }

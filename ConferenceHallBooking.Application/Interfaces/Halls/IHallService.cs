@@ -1,6 +1,6 @@
 ﻿using ConferenceHallBooking.Application.DTOs.Halls;
 
-namespace ConferenceHallBookingApi.ConferenceHallBooking.Application.Interfaces.Halls;
+namespace ConferenceHallBooking.Application.Interfaces.Halls;
 
 public interface IHallService
 {
