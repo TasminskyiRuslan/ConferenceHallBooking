@@ -1,8 +1,8 @@
 ﻿namespace ConferenceHallBooking.Application.Configuration;
 
-public class PricingSettings
+public sealed record PricingSettings
 {
     public const string SectionName = "PricingSettings";
 
-    public List<PricingRule> Rules { get; set; } = new();
+    public List<PricingRule> Rules { get; init; } = [];
 }

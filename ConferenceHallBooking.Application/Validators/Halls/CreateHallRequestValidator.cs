@@ -1,7 +1,7 @@
 ﻿using ConferenceHallBooking.Application.DTOs.Halls;
 using FluentValidation;
 
-namespace ConferenceHallBookingApi.ConferenceHallBooking.Application.Validators.Halls;
+namespace ConferenceHallBooking.Application.Validators.Halls;
 
 public class CreateHallRequestValidator : AbstractValidator<CreateHallRequest>
 {

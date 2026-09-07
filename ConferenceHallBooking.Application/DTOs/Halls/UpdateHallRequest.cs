@@ -4,4 +4,4 @@ public record UpdateHallRequest(
     string Name,
     int Capacity,
     decimal BaseHourlyRate,
-    List<Guid> OptionIds);
+    List<Guid>? OptionIds);

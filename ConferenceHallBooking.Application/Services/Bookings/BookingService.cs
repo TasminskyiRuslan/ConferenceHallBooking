@@ -1,122 +1,60 @@
 ﻿using ConferenceHallBooking.Application.DTOs.Bookings;
 using ConferenceHallBooking.Application.DTOs.Options;
-using ConferenceHallBooking.Application.Exceptions;
+using ConferenceHallBooking.Application.Extensions;
 using ConferenceHallBooking.Application.Interfaces.Bookings;
 using ConferenceHallBooking.Domain.Entities;
+using ConferenceHallBooking.Domain.Exceptions;
 using ConferenceHallBooking.Domain.Interfaces;
-using ConferenceHallBookingApi.ConferenceHallBooking.Application.Interfaces.Bookings;
-using Microsoft.Extensions.Logging;
 
 namespace ConferenceHallBooking.Application.Services.Bookings;
 
-public class BookingService : IBookingService
+public class BookingService(
+    IBookingRepository bookingRepository,
+    IHallRepository hallRepository,
+    IOptionRepository optionRepository,
+    IPricingService pricingService,
+    IUnitOfWork unitOfWork) : IBookingService
 {
-    private readonly IBookingRepository _bookingRepository;
-    private readonly IHallRepository _hallRepository;
-    private readonly IOptionRepository _optionRepository;
-    private readonly IPricingService _pricingService;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<BookingService> _logger;
-
-    public BookingService(
-        IBookingRepository bookingRepository,
-        IHallRepository hallRepository,
-        IOptionRepository optionRepository,
-        IPricingService pricingService,
-        IUnitOfWork unitOfWork,
-        ILogger<BookingService> logger)
-    {
-        _bookingRepository = bookingRepository;
-        _hallRepository = hallRepository;
-        _optionRepository = optionRepository;
-        _pricingService = pricingService;
-        _unitOfWork = unitOfWork;
-        _logger = logger;
-    }
-
     public async Task<BookingResponse> CreateAsync(
         CreateBookingRequest request,
         CancellationToken cancellationToken = default)
     {
         if (request.DurationHours <= 0)
         {
-            _logger.LogWarning("Attempted to create a booking with invalid duration: {DurationHours} hours.", request.DurationHours);
-            throw new BusinessRuleException("Booking duration must be greater than zero.");
+            throw new InvalidBookingDurationException(request.DurationHours);
         }
 
-        var hall = await GetHallByIdOrThrowAsync(request.HallId, cancellationToken);
+        var hall = await hallRepository.GetByIdAsync(request.HallId, cancellationToken)
+            ?? throw new NotFoundException<Hall>(request.HallId.ToString());
 
         var startTime = request.StartTime;
         var endTime = startTime.AddHours((double)request.DurationHours);
 
-        var isOverlapping = await _bookingRepository.HasOverlappingBookingAsync(
-            hall.Id, startTime, endTime, cancellationToken);
-
-        if (isOverlapping)
+        if (await bookingRepository.HasOverlappingBookingAsync(hall.Id, startTime, endTime, cancellationToken))
         {
-            _logger.LogWarning("Conference hall {HallId} is already booked for time slot between {StartTime} and {EndTime}.", hall.Id, startTime, endTime);
-            throw new BusinessRuleException("The conference hall is already booked for the specified time slot.");
+            throw new HallAlreadyBookedException(hall.Id, startTime, endTime);
         }
 
-        var targetOptionIds = (request.OptionIds ?? []).Distinct().ToList();
-        var selectedOptions = new List<Option>();
+        var optionIds = new HashSet<Guid>(request.OptionIds ?? []);
 
-        if (targetOptionIds.Count > 0)
+        var allowedOptionIds = hall.HallOptions.Select(ho => ho.OptionId).ToHashSet();
+
+        if (optionIds.Any(id => !allowedOptionIds.Contains(id)))
         {
-            ValidateHallSupportsOptions(hall, targetOptionIds);
-            selectedOptions = (await GetOptionsOrThrowAsync(targetOptionIds, cancellationToken)).ToList();
+            throw new HallOptionNotSupportedException(hall.Id, optionIds);
         }
 
-        var pricing = _pricingService.CalculatePrice(hall.BaseHourlyRate, selectedOptions, startTime, endTime);
+        var selectedOptions = await optionRepository.GetByIdsOrThrowAsync(optionIds, cancellationToken);
+
+        var pricing = pricingService.CalculatePrice(hall.BaseHourlyRate, selectedOptions, startTime, endTime);
 
         var bookingOptions = selectedOptions.Select(o => new BookingOption(o.Id, o.Price));
         var booking = new Booking(hall.Id, startTime, endTime, pricing.TotalCost, bookingOptions);
 
-        await _bookingRepository.AddAsync(booking, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation("Booking {BookingId} was successfully created for hall {HallId}.", booking.Id, hall.Id);
+        await bookingRepository.AddAsync(booking, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return MapToResponse(booking, hall, selectedOptions, pricing, request.DurationHours);
-    }
-
-    private async Task<Hall> GetHallByIdOrThrowAsync(Guid hallId, CancellationToken cancellationToken)
-    {
-        var hall = await _hallRepository.GetByIdAsync(hallId, cancellationToken);
-
-        if (hall is null)
-        {
-            _logger.LogWarning("Conference hall with ID {HallId} was not found.", hallId);
-            throw new NotFoundException($"Conference hall with ID '{hallId}' was not found.");
-        }
-
-        return hall;
-    }
-
-    private async Task<IReadOnlyList<Option>> GetOptionsOrThrowAsync(
-        IReadOnlyCollection<Guid> distinctOptionIds,
-        CancellationToken cancellationToken)
-    {
-        var existingOptions = (await _optionRepository.GetByIdsAsync(distinctOptionIds, cancellationToken)).ToList();
-
-        if (existingOptions.Count != distinctOptionIds.Count)
-        {
-            _logger.LogWarning("Attempted to access one or more non-existent options.");
-            throw new BusinessRuleException("One or more specified options do not exist.");
-        }
-
-        return existingOptions;
-    }
-
-    private static void ValidateHallSupportsOptions(Hall hall, IReadOnlyCollection<Guid> targetOptionIds)
-    {
-        var allowedOptionIds = hall.HallOptions.Select(ho => ho.OptionId).ToHashSet();
-        var hasUnsupportedOptions = targetOptionIds.Any(id => !allowedOptionIds.Contains(id));
-
-        if (hasUnsupportedOptions)
-        {
-            throw new BusinessRuleException("One or more selected options are not available for this conference hall.");
-        }
     }
 
     private static BookingResponse MapToResponse(

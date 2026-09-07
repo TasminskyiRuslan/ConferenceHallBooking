@@ -1,34 +1,26 @@
 ﻿using ConferenceHallBooking.Domain.Entities;
+using ConferenceHallBooking.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace ConferenceHallBooking.Infrastructure.Data;
 
-public class DbInitializer : IDbInitializer
+public class DbInitializer(AppDbContext context, ILogger<DbInitializer> logger) : IDbInitializer
 {
-    private readonly AppDbContext _context;
-    private readonly ILogger<DbInitializer> _logger;
-
-    public DbInitializer(AppDbContext context, ILogger<DbInitializer> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
-
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Applying pending database migrations...");
-            await _context.Database.MigrateAsync(cancellationToken);
+            logger.LogInformation("Applying pending database migrations...");
+            await context.Database.MigrateAsync(cancellationToken);
 
-            if (await _context.Halls.AnyAsync(cancellationToken))
+            if (await context.Halls.AnyAsync(cancellationToken))
             {
-                _logger.LogInformation("Database already seeded. Skipping initial data population.");
+                logger.LogInformation("Database already seeded. Skipping initial data population.");
                 return;
             }
 
-            _logger.LogInformation("Seeding initial database data...");
+            logger.LogInformation("Seeding initial database data...");
 
             var projector = new Option("Проєктор", 500m);
             var wifi = new Option("Wi-Fi", 300m);
@@ -38,9 +30,9 @@ public class DbInitializer : IDbInitializer
             var hallB = new Hall("Зал В", 100, 3500m);
             var hallC = new Hall("Зал С", 30, 1500m);
 
-            await _context.Options.AddRangeAsync(new[] { projector, wifi, sound }, cancellationToken);
-            await _context.Halls.AddRangeAsync(new[] { hallA, hallB, hallC }, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
+            await context.Options.AddRangeAsync([projector, wifi, sound], cancellationToken);
+            await context.Halls.AddRangeAsync([hallA, hallB, hallC], cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
 
             hallA.AddOption(projector.Id);
             hallA.AddOption(wifi.Id);
@@ -54,13 +46,13 @@ public class DbInitializer : IDbInitializer
             hallC.AddOption(wifi.Id);
             hallC.AddOption(sound.Id);
 
-            await _context.SaveChangesAsync(cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Database seeded successfully.");
+            logger.LogInformation("Database seeded successfully.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while seeding the database.");
+            logger.LogError(ex, "An error occurred while seeding the database.");
             throw;
         }
     }

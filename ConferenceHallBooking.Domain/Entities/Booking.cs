@@ -1,4 +1,6 @@
-﻿namespace ConferenceHallBooking.Domain.Entities;
+﻿using ConferenceHallBooking.Domain.Exceptions;
+
+namespace ConferenceHallBooking.Domain.Entities;
 
 public class Booking
 {
@@ -13,8 +15,8 @@ public class Booking
     public decimal TotalPrice { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
-    private readonly List<BookingOption> _bookingOptions = new();
-    public IReadOnlyCollection<BookingOption> BookingOptions => _bookingOptions.AsReadOnly();
+    private readonly List<BookingOption> _bookingOptions = [];
+    public IReadOnlyCollection<BookingOption> BookingOptions => _bookingOptions;
 
     private Booking() { }
 
@@ -26,10 +28,10 @@ public class Booking
         IEnumerable<BookingOption>? options = null)
     {
         if (endTime <= startTime)
-            throw new ArgumentException("EndTime must be strictly greater than StartTime.");
+            throw new InvalidBookingTimeException(startTime, endTime);
 
         if (totalPrice < 0)
-            throw new ArgumentException("TotalPrice cannot be negative.", nameof(totalPrice));
+            throw new InvalidEntityFieldException(nameof(Booking), nameof(TotalPrice), "total price cannot be negative");
 
         Id = Guid.NewGuid();
         HallId = hallId;
@@ -38,7 +40,7 @@ public class Booking
         TotalPrice = totalPrice;
         CreatedAtUtc = DateTimeOffset.UtcNow;
 
-        if (options != null)
+        if (options is not null)
         {
             _bookingOptions.AddRange(options);
         }

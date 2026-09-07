@@ -1,6 +1,6 @@
-﻿namespace ConferenceHallBooking.Application.DTOs.Halls;
+﻿using ConferenceHallBooking.Application.DTOs.Options;
 
-using ConferenceHallBooking.Application.DTOs.Options;
+namespace ConferenceHallBooking.Application.DTOs.Halls;
 
 public record HallResponse(
     Guid Id,

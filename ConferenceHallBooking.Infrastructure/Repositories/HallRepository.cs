@@ -1,22 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
-using ConferenceHallBooking.Domain.Entities;
+﻿using ConferenceHallBooking.Domain.Entities;
 using ConferenceHallBooking.Domain.Interfaces;
 using ConferenceHallBooking.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace ConferenceHallBooking.Infrastructure.Repositories;
 
-public class HallRepository : IHallRepository
+public class HallRepository(AppDbContext context) : IHallRepository
 {
-    private readonly AppDbContext _context;
-
-    public HallRepository(AppDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<Hall?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.Halls
+        return await context.Halls
             .Include(h => h.HallOptions)
                 .ThenInclude(ho => ho.Option)
             .FirstOrDefaultAsync(h => h.Id == id, cancellationToken);
@@ -28,7 +21,7 @@ public class HallRepository : IHallRepository
         int capacity,
         CancellationToken cancellationToken = default)
     {
-        return await _context.Halls
+        return await context.Halls
             .AsNoTracking()
             .Where(h => h.Capacity >= capacity)
             .Where(h => !h.Bookings.Any(b => startTime < b.EndTime && endTime > b.StartTime))
@@ -39,16 +32,16 @@ public class HallRepository : IHallRepository
 
     public async Task AddAsync(Hall hall, CancellationToken cancellationToken = default)
     {
-        await _context.Halls.AddAsync(hall, cancellationToken);
+        await context.Halls.AddAsync(hall, cancellationToken);
     }
 
     public void Update(Hall hall)
     {
-        _context.Halls.Update(hall);
+        context.Halls.Update(hall);
     }
 
     public void Delete(Hall hall)
     {
-        _context.Halls.Remove(hall);
+        context.Halls.Remove(hall);
     }
 }

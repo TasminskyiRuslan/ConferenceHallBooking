@@ -1,4 +1,6 @@
-﻿namespace ConferenceHallBooking.Domain.Entities;
+﻿using ConferenceHallBooking.Domain.Exceptions;
+
+namespace ConferenceHallBooking.Domain.Entities;
 
 public class BookingOption
 {
@@ -15,7 +17,7 @@ public class BookingOption
     public BookingOption(Guid optionId, decimal priceAtBooking)
     {
         if (priceAtBooking < 0)
-            throw new ArgumentException("Price cannot be negative.", nameof(priceAtBooking));
+            throw new InvalidEntityFieldException(nameof(BookingOption), nameof(PriceAtBooking), "price cannot be negative");
 
         OptionId = optionId;
         PriceAtBooking = priceAtBooking;

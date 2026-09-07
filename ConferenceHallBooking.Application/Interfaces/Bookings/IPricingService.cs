@@ -1,8 +1,7 @@
-﻿using ConferenceHallBooking.Application.DTOs;
-using ConferenceHallBooking.Application.DTOs.Bookings;
+﻿using ConferenceHallBooking.Application.DTOs.Bookings;
 using ConferenceHallBooking.Domain.Entities;
 
-namespace ConferenceHallBookingApi.ConferenceHallBooking.Application.Interfaces.Bookings;
+namespace ConferenceHallBooking.Application.Interfaces.Bookings;
 
 public interface IPricingService
 {

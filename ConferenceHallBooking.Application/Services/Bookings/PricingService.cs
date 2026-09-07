@@ -1,21 +1,14 @@
 ﻿using ConferenceHallBooking.Application.Configuration;
 using ConferenceHallBooking.Application.DTOs.Bookings;
-using ConferenceHallBooking.Application.Exceptions;
+using ConferenceHallBooking.Application.Interfaces.Bookings;
 using ConferenceHallBooking.Domain.Entities;
-using ConferenceHallBookingApi.ConferenceHallBooking.Application.Interfaces.Bookings;
+using ConferenceHallBooking.Domain.Exceptions;
 using Microsoft.Extensions.Options;
 
-namespace ConferenceHallBookingApi.ConferenceHallBooking.Application.Services.Bookings;
+namespace ConferenceHallBooking.Application.Services.Bookings;
 
-public class PricingService : IPricingService
+public class PricingService(IOptions<PricingSettings> settings) : IPricingService
 {
-    private readonly PricingSettings _settings;
-
-    public PricingService(IOptions<PricingSettings> settings)
-    {
-        _settings = settings.Value;
-    }
-
     public PricingResult CalculatePrice(
         decimal baseHourlyRate,
         IEnumerable<Option>? selectedOptions,
@@ -24,36 +17,17 @@ public class PricingService : IPricingService
     {
         if (endTime <= startTime)
         {
-            throw new BusinessRuleException(
-                "The booking end time must be strictly after the start time.");
+            throw new InvalidBookingTimeException(startTime, endTime);
         }
 
         if (baseHourlyRate <= 0)
         {
-            throw new BusinessRuleException(
-                "Base hourly rate must be greater than zero.");
+            throw new InvalidBaseHourlyRateException(baseHourlyRate);
         }
 
-        var boundaryPoints = GetBoundaryPoints(startTime, endTime);
-
-        decimal hallCost = 0m;
-
-        for (var i = 0; i < boundaryPoints.Count - 1; i++)
-        {
-            var segmentStart = boundaryPoints[i];
-            var segmentEnd = boundaryPoints[i + 1];
-
-            var hours = (decimal)(segmentEnd - segmentStart).Ticks / TimeSpan.TicksPerHour;
-
-            var middleTicks = segmentStart.Ticks + (segmentEnd.Ticks - segmentStart.Ticks) / 2;
-            var middlePoint = new DateTimeOffset(middleTicks, startTime.Offset);
-            var time = TimeOnly.FromDateTime(middlePoint.DateTime);
-
-            var multiplier = GetMultiplierForTime(time);
-
-            hallCost += baseHourlyRate * hours * multiplier;
-        }
-
+        var rules = settings.Value.Rules;
+        var boundaryPoints = GetBoundaryPoints(startTime, endTime, rules);
+        var hallCost = CalculateHallCost(baseHourlyRate, boundaryPoints, startTime, rules);
         var optionsCost = selectedOptions?.Sum(option => option.Price) ?? 0m;
 
         var roundedHallCost = Math.Round(hallCost, 2, MidpointRounding.AwayFromZero);
@@ -63,15 +37,51 @@ public class PricingService : IPricingService
         return new PricingResult(roundedHallCost, roundedOptionsCost, roundedTotalCost);
     }
 
-    private List<DateTimeOffset> GetBoundaryPoints(
+    private static decimal CalculateHallCost(
+        decimal baseHourlyRate,
+        IReadOnlyList<DateTimeOffset> boundaryPoints,
+        DateTimeOffset referenceOffset,
+        IReadOnlyList<PricingRule> rules)
+    {
+        decimal hallCost = 0m;
+
+        for (var i = 0; i < boundaryPoints.Count - 1; i++)
+        {
+            var segmentStart = boundaryPoints[i];
+            var segmentEnd = boundaryPoints[i + 1];
+
+            var hours = (decimal)(segmentEnd - segmentStart).Ticks / TimeSpan.TicksPerHour;
+            var multiplier = GetMultiplierForSegment(segmentStart, segmentEnd, referenceOffset, rules);
+
+            hallCost += baseHourlyRate * hours * multiplier;
+        }
+
+        return hallCost;
+    }
+
+    private static decimal GetMultiplierForSegment(
+        DateTimeOffset segmentStart,
+        DateTimeOffset segmentEnd,
+        DateTimeOffset referenceOffset,
+        IReadOnlyList<PricingRule> rules)
+    {
+        var middleTicks = segmentStart.Ticks + (segmentEnd.Ticks - segmentStart.Ticks) / 2;
+        var middlePoint = new DateTimeOffset(middleTicks, referenceOffset.Offset);
+        var time = TimeOnly.FromDateTime(middlePoint.DateTime);
+
+        return GetMultiplierForTime(time, rules);
+    }
+
+    private static List<DateTimeOffset> GetBoundaryPoints(
         DateTimeOffset start,
-        DateTimeOffset end)
+        DateTimeOffset end,
+        IReadOnlyList<PricingRule> rules)
     {
         var points = new HashSet<DateTimeOffset> { start, end };
 
-        if (_settings.Rules.Count == 0)
+        if (rules.Count == 0)
         {
-            return points.OrderBy(point => point).ToList();
+            return [.. points.OrderBy(point => point)];
         }
 
         var startDate = DateOnly.FromDateTime(start.Date);
@@ -79,29 +89,34 @@ public class PricingService : IPricingService
 
         for (var date = startDate; date <= endDate; date = date.AddDays(1))
         {
-            foreach (var rule in _settings.Rules)
+            foreach (var rule in rules)
             {
-                var ruleStart = new DateTimeOffset(date.ToDateTime(rule.StartTime), start.Offset);
-                var ruleEnd = new DateTimeOffset(date.ToDateTime(rule.EndTime), start.Offset);
-
-                if (ruleStart > start && ruleStart < end)
-                {
-                    points.Add(ruleStart);
-                }
-
-                if (ruleEnd > start && ruleEnd < end)
-                {
-                    points.Add(ruleEnd);
-                }
+                AddBoundaryIfInRange(points, start, end, date, rule.StartTime);
+                AddBoundaryIfInRange(points, start, end, date, rule.EndTime);
             }
         }
 
-        return points.OrderBy(point => point).ToList();
+        return [.. points.OrderBy(point => point)];
     }
 
-    private decimal GetMultiplierForTime(TimeOnly time)
+    private static void AddBoundaryIfInRange(
+        HashSet<DateTimeOffset> points,
+        DateTimeOffset rangeStart,
+        DateTimeOffset rangeEnd,
+        DateOnly date,
+        TimeOnly time)
     {
-        var rule = _settings.Rules
+        var point = new DateTimeOffset(date.ToDateTime(time), rangeStart.Offset);
+
+        if (point > rangeStart && point < rangeEnd)
+        {
+            points.Add(point);
+        }
+    }
+
+    private static decimal GetMultiplierForTime(TimeOnly time, IReadOnlyList<PricingRule> rules)
+    {
+        var rule = rules
             .FirstOrDefault(r => time >= r.StartTime && time < r.EndTime);
 
         return rule?.Multiplier ?? 1.0m;
