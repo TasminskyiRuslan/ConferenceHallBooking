@@ -1,11 +1,11 @@
-﻿using ConferenceHallBooking.Application.DTOs.Halls;
+using ConferenceHallBooking.Application.Features.Halls.Commands;
 using FluentValidation;
 
 namespace ConferenceHallBooking.Application.Validators.Halls;
 
-public class CreateHallRequestValidator : AbstractValidator<CreateHallRequest>
+public class CreateHallCommandValidator : AbstractValidator<CreateHallCommand>
 {
-    public CreateHallRequestValidator()
+    public CreateHallCommandValidator()
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Hall name is required.")

@@ -1,17 +1,17 @@
-﻿using ConferenceHallBooking.Application.DTOs.Halls;
+using ConferenceHallBooking.Application.Features.Halls.Queries;
 using FluentValidation;
 
 namespace ConferenceHallBooking.Application.Validators.Halls;
 
-public class SearchAvailableHallsRequestValidator : AbstractValidator<SearchAvailableHallsRequest>
+public class SearchAvailableHallsQueryValidator : AbstractValidator<SearchAvailableHallsQuery>
 {
-    public SearchAvailableHallsRequestValidator()
+    public SearchAvailableHallsQueryValidator()
     {
         RuleFor(x => x.Capacity)
             .GreaterThan(0).WithMessage("Requested capacity must be greater than zero.");
 
         RuleFor(x => x.StartTime)
-            .GreaterThanOrEqualTo(DateTime.UtcNow)
+            .Must(time => time >= DateTimeOffset.UtcNow)
             .WithMessage("Start time cannot be in the past.");
 
         RuleFor(x => x.EndTime)

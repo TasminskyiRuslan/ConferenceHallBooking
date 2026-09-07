@@ -39,9 +39,11 @@ public class BookingService(
 
         var allowedOptionIds = hall.HallOptions.Select(ho => ho.OptionId).ToHashSet();
 
-        if (optionIds.Any(id => !allowedOptionIds.Contains(id)))
+        var unsupportedOptionIds = optionIds.Where(id => !allowedOptionIds.Contains(id)).ToList();
+
+        if (unsupportedOptionIds.Count != 0)
         {
-            throw new HallOptionNotSupportedException(hall.Id, optionIds);
+            throw new HallOptionNotSupportedException(hall.Id, unsupportedOptionIds);
         }
 
         var selectedOptions = await optionRepository.GetByIdsOrThrowAsync(optionIds, cancellationToken);

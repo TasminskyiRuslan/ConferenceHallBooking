@@ -15,7 +15,7 @@ public class HallRepository(AppDbContext context) : IHallRepository
             .FirstOrDefaultAsync(h => h.Id == id, cancellationToken);
     }
 
-    public async Task<IEnumerable<Hall>> GetAvailableHallsAsync(
+    public async Task<IReadOnlyList<Hall>> GetAvailableHallsAsync(
         DateTimeOffset startTime,
         DateTimeOffset endTime,
         int capacity,

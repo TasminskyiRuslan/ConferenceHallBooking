@@ -1,17 +1,17 @@
-﻿using ConferenceHallBooking.Application.DTOs.Bookings;
+using ConferenceHallBooking.Application.Features.Bookings.Commands;
 using FluentValidation;
 
 namespace ConferenceHallBooking.Application.Validators.Bookings;
 
-public class CreateBookingRequestValidator : AbstractValidator<CreateBookingRequest>
+public class CreateBookingCommandValidator : AbstractValidator<CreateBookingCommand>
 {
-    public CreateBookingRequestValidator()
+    public CreateBookingCommandValidator()
     {
         RuleFor(x => x.HallId)
             .NotEmpty().WithMessage("Hall ID is required.");
 
         RuleFor(x => x.StartTime)
-            .GreaterThanOrEqualTo(DateTimeOffset.UtcNow)
+            .Must(time => time >= DateTimeOffset.UtcNow)
             .WithMessage("Booking start time cannot be in the past.");
 
         RuleFor(x => x.DurationHours)

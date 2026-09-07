@@ -1,12 +1,15 @@
-﻿using ConferenceHallBooking.Application.DTOs.Halls;
+using ConferenceHallBooking.Application.Features.Halls.Commands;
 using FluentValidation;
 
 namespace ConferenceHallBooking.Application.Validators.Halls;
 
-public class UpdateHallRequestValidator : AbstractValidator<UpdateHallRequest>
+public class UpdateHallCommandValidator : AbstractValidator<UpdateHallCommand>
 {
-    public UpdateHallRequestValidator()
+    public UpdateHallCommandValidator()
     {
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("Hall ID is required.");
+
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Hall name is required.")
             .MaximumLength(100).WithMessage("Hall name must not exceed 100 characters.");
