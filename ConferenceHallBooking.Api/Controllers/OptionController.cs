@@ -17,6 +17,18 @@ namespace ConferenceHallBooking.Api.Controllers;
 public class OptionController(ISender sender) : ControllerBase
 {
     /// <summary>
+    /// Gets a service option by its ID.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(OptionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var option = await sender.Send(new GetOptionByIdQuery(id), cancellationToken);
+        return Ok(option);
+    }
+
+    /// <summary>
     /// Gets all available service options.
     /// </summary>
     [HttpGet]
