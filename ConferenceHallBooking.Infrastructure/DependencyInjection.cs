@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
-public static class ServiceCollectionExtensions
+public static class InfrastructureServiceExtensions
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,

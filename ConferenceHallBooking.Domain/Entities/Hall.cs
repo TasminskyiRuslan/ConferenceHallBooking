@@ -31,8 +31,8 @@ public class Hall
         if (capacity <= 0)
             throw new InvalidEntityFieldException(nameof(Hall), nameof(Capacity), "capacity must be greater than zero");
 
-        if (baseHourlyRate < 0)
-            throw new InvalidEntityFieldException(nameof(Hall), nameof(BaseHourlyRate), "base hourly rate cannot be negative");
+        if (baseHourlyRate <= 0)
+            throw new InvalidEntityFieldException(nameof(Hall), nameof(BaseHourlyRate), "base hourly rate must be greater than zero");
 
         Name = name;
         Capacity = capacity;

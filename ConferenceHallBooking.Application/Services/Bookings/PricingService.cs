@@ -1,4 +1,4 @@
-﻿using ConferenceHallBooking.Application.Configuration;
+using ConferenceHallBooking.Application.Configuration;
 using ConferenceHallBooking.Application.DTOs.Bookings;
 using ConferenceHallBooking.Application.Interfaces.Bookings;
 using ConferenceHallBooking.Domain.Entities;

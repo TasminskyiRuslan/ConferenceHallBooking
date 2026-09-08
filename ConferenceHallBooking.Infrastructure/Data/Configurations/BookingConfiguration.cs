@@ -27,6 +27,8 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .HasForeignKey(b => b.HallId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasIndex(b => new { b.HallId, b.StartTime, b.EndTime });
+
         builder.Navigation(b => b.BookingOptions)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }

@@ -1,4 +1,4 @@
-﻿namespace ConferenceHallBooking.Domain.Interfaces;
+namespace ConferenceHallBooking.Domain.Interfaces;
 
 public interface IUnitOfWork
 {

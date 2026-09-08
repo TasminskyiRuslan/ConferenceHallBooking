@@ -1,4 +1,4 @@
-namespace ConferenceHallBooking.Domain.Interfaces;
+namespace ConferenceHallBooking.Infrastructure.Data;
 
 public interface IDbInitializer
 {

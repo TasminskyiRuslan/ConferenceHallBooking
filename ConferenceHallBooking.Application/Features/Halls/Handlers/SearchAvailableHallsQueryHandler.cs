@@ -1,22 +1,24 @@
 using ConferenceHallBooking.Application.DTOs.Halls;
 using ConferenceHallBooking.Application.Features.Halls.Queries;
-using ConferenceHallBooking.Application.Interfaces.Halls;
+using ConferenceHallBooking.Application.Mappers;
+using ConferenceHallBooking.Domain.Interfaces;
 using MediatR;
 
 namespace ConferenceHallBooking.Application.Features.Halls.Handlers;
 
-public class SearchAvailableHallsQueryHandler(IHallService hallService)
+public class SearchAvailableHallsQueryHandler(IHallRepository hallRepository)
     : IRequestHandler<SearchAvailableHallsQuery, IReadOnlyCollection<HallResponse>>
 {
     public async Task<IReadOnlyCollection<HallResponse>> Handle(
         SearchAvailableHallsQuery request,
         CancellationToken cancellationToken)
     {
-        var searchRequest = new SearchAvailableHallsRequest(
+        var halls = await hallRepository.GetAvailableHallsAsync(
             request.StartTime,
             request.EndTime,
-            request.Capacity);
+            request.Capacity,
+            cancellationToken);
 
-        return await hallService.SearchAvailableAsync(searchRequest, cancellationToken);
+        return halls.Select(HallMapper.MapToResponse).ToList().AsReadOnly();
     }
 }

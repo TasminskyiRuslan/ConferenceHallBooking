@@ -1,14 +1,29 @@
 using ConferenceHallBooking.Application.Features.Halls.Commands;
-using ConferenceHallBooking.Application.Interfaces.Halls;
+using ConferenceHallBooking.Domain.Entities;
+using ConferenceHallBooking.Domain.Exceptions;
+using ConferenceHallBooking.Domain.Interfaces;
 using MediatR;
 
 namespace ConferenceHallBooking.Application.Features.Halls.Handlers;
 
-public class DeleteHallCommandHandler(IHallService hallService)
-    : IRequestHandler<DeleteHallCommand>
+public class DeleteHallCommandHandler(
+    IHallRepository hallRepository,
+    IBookingRepository bookingRepository,
+    IUnitOfWork unitOfWork) : IRequestHandler<DeleteHallCommand>
 {
     public async Task Handle(DeleteHallCommand request, CancellationToken cancellationToken)
     {
-        await hallService.DeleteAsync(request.Id, cancellationToken);
+        var hall = await hallRepository.GetByIdAsync(request.Id, cancellationToken)
+            ?? throw new NotFoundException<Hall>(request.Id.ToString());
+
+        var bookingCount = await bookingRepository.GetBookingCountByHallIdAsync(hall.Id, cancellationToken);
+
+        if (bookingCount > 0)
+        {
+            throw new HallHasBookingsException(hall.Id, bookingCount);
+        }
+
+        hallRepository.Delete(hall);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

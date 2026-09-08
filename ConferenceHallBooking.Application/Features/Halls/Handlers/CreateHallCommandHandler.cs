@@ -1,21 +1,38 @@
 using ConferenceHallBooking.Application.DTOs.Halls;
+using ConferenceHallBooking.Application.Extensions;
 using ConferenceHallBooking.Application.Features.Halls.Commands;
-using ConferenceHallBooking.Application.Interfaces.Halls;
+using ConferenceHallBooking.Application.Mappers;
+using ConferenceHallBooking.Domain.Entities;
+using ConferenceHallBooking.Domain.Exceptions;
+using ConferenceHallBooking.Domain.Interfaces;
 using MediatR;
 
 namespace ConferenceHallBooking.Application.Features.Halls.Handlers;
 
-public class CreateHallCommandHandler(IHallService hallService)
-    : IRequestHandler<CreateHallCommand, Guid>
+public class CreateHallCommandHandler(
+    IHallRepository hallRepository,
+    IOptionRepository optionRepository,
+    IUnitOfWork unitOfWork) : IRequestHandler<CreateHallCommand, HallResponse>
 {
-    public async Task<Guid> Handle(CreateHallCommand request, CancellationToken cancellationToken)
+    public async Task<HallResponse> Handle(CreateHallCommand request, CancellationToken cancellationToken)
     {
-        var createRequest = new CreateHallRequest(
-            request.Name,
-            request.Capacity,
-            request.BaseHourlyRate,
-            request.OptionIds);
+        var optionIds = new HashSet<Guid>(request.OptionIds ?? []);
 
-        return await hallService.CreateAsync(createRequest, cancellationToken);
+        await optionRepository.GetByIdsOrThrowAsync(optionIds, cancellationToken);
+
+        var hall = new Hall(request.Name, request.Capacity, request.BaseHourlyRate);
+
+        foreach (var optionId in optionIds)
+        {
+            hall.AddOption(optionId);
+        }
+
+        await hallRepository.AddAsync(hall, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var created = await hallRepository.GetByIdAsync(hall.Id, cancellationToken)
+            ?? throw new NotFoundException<Hall>(hall.Id.ToString());
+
+        return HallMapper.MapToResponse(created);
     }
 }

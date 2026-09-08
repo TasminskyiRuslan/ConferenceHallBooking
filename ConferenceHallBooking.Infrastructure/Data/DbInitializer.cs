@@ -1,5 +1,4 @@
 ﻿using ConferenceHallBooking.Domain.Entities;
-using ConferenceHallBooking.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 

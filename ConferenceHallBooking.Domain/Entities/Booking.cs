@@ -30,8 +30,8 @@ public class Booking
         if (endTime <= startTime)
             throw new InvalidBookingTimeException(startTime, endTime);
 
-        if (totalPrice < 0)
-            throw new InvalidEntityFieldException(nameof(Booking), nameof(TotalPrice), "total price cannot be negative");
+        if (totalPrice <= 0)
+            throw new InvalidEntityFieldException(nameof(Booking), nameof(TotalPrice), "total price must be greater than zero");
 
         Id = Guid.NewGuid();
         HallId = hallId;

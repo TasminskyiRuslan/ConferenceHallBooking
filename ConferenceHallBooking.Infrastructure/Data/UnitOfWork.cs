@@ -1,7 +1,7 @@
-﻿using ConferenceHallBooking.Domain.Interfaces;
-using ConferenceHallBooking.Infrastructure.Data;
+using ConferenceHallBooking.Domain.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
-namespace ConferenceHallBooking.Infrastructure.Repositories;
+namespace ConferenceHallBooking.Infrastructure.Data;
 
 public class UnitOfWork(AppDbContext context) : IUnitOfWork
 {
