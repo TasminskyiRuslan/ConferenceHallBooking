@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using ConferenceHallBooking.Application.DTOs.Halls;
+using ConferenceHallBooking.Application.DTOs.Options;
 using ConferenceHallBooking.Domain.Entities;
 using ConferenceHallBooking.Infrastructure.Data;
 using FluentAssertions;
@@ -28,12 +29,15 @@ public class HallApiTests : IClassFixture<TestWebApplicationFactory>, IAsyncLife
     [Fact]
     public async Task GetById_WhenHallExists_ShouldReturn200WithHall()
     {
+        var optionResponse = await _client.PostAsJsonAsync("/api/option", new { Name = "Projector", Price = 500m });
+        var option = await optionResponse.Content.ReadFromJsonAsync<OptionResponse>();
+
         var createResponse = await _client.PostAsJsonAsync("/api/hall", new
         {
             Name = "Test Hall",
             Capacity = 50,
             BaseHourlyRate = 1000m,
-            Options = new[] { new { Name = "Projector", Price = 500m } }
+            OptionIds = new[] { option!.Id }
         });
         var created = await createResponse.Content.ReadFromJsonAsync<HallResponse>();
 
@@ -71,16 +75,17 @@ public class HallApiTests : IClassFixture<TestWebApplicationFactory>, IAsyncLife
     [Fact]
     public async Task Create_WithValidData_ShouldReturn201WithLocation()
     {
+        var optionResponse1 = await _client.PostAsJsonAsync("/api/option", new { Name = "Projector", Price = 500m });
+        var option1 = await optionResponse1.Content.ReadFromJsonAsync<OptionResponse>();
+        var optionResponse2 = await _client.PostAsJsonAsync("/api/option", new { Name = "Wi-Fi", Price = 300m });
+        var option2 = await optionResponse2.Content.ReadFromJsonAsync<OptionResponse>();
+
         var command = new
         {
             Name = "New Conference Hall",
             Capacity = 100,
             BaseHourlyRate = 2500m,
-            Options = new[]
-            {
-                new { Name = "Projector", Price = 500m },
-                new { Name = "Wi-Fi", Price = 300m }
-            }
+            OptionIds = new[] { option1!.Id, option2!.Id }
         };
 
         var response = await _client.PostAsJsonAsync("/api/hall", command);
@@ -171,14 +176,33 @@ public class HallApiTests : IClassFixture<TestWebApplicationFactory>, IAsyncLife
     }
 
     [Fact]
-    public async Task Create_WithNewOptions_ShouldCreateOptionsAndLinkToHall()
+    public async Task Create_WithNonExistentOptionIds_ShouldReturn404()
     {
         var command = new
         {
-            Name = "Hall With New Options",
+            Name = "Hall With Bad Options",
             Capacity = 50,
             BaseHourlyRate = 1000m,
-            Options = new[] { new { Name = "Brand New Service", Price = 999m } }
+            OptionIds = new[] { Guid.NewGuid() }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/hall", command);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Create_WithExistingOptionIds_ShouldLinkOptionsToHall()
+    {
+        var optionResponse = await _client.PostAsJsonAsync("/api/option", new { Name = "Brand New Service", Price = 999m });
+        var option = await optionResponse.Content.ReadFromJsonAsync<OptionResponse>();
+
+        var command = new
+        {
+            Name = "Hall With Existing Options",
+            Capacity = 50,
+            BaseHourlyRate = 1000m,
+            OptionIds = new[] { option!.Id }
         };
 
         var response = await _client.PostAsJsonAsync("/api/hall", command);
@@ -197,6 +221,9 @@ public class HallApiTests : IClassFixture<TestWebApplicationFactory>, IAsyncLife
     [Fact]
     public async Task Update_WithValidData_ShouldReturn200WithUpdatedHall()
     {
+        var optionResponse = await _client.PostAsJsonAsync("/api/option", new { Name = "Projector", Price = 500m });
+        var option = await optionResponse.Content.ReadFromJsonAsync<OptionResponse>();
+
         var createResponse = await _client.PostAsJsonAsync("/api/hall", new
         {
             Name = "Old Name",
@@ -210,7 +237,7 @@ public class HallApiTests : IClassFixture<TestWebApplicationFactory>, IAsyncLife
             Name = "New Name",
             Capacity = 80,
             BaseHourlyRate = 1500m,
-            Options = new[] { new { Name = "Projector", Price = 500m } }
+            OptionIds = new[] { option!.Id }
         });
 
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);

@@ -16,5 +16,13 @@ public class CreateHallCommandValidator : AbstractValidator<CreateHallCommand>
 
         RuleFor(x => x.BaseHourlyRate)
             .GreaterThan(0).WithMessage("Base hourly rate must be greater than zero.");
+
+        RuleFor(x => x.OptionIds)
+            .Must(ids => ids == null || ids.All(id => id != Guid.Empty))
+            .WithMessage("Option IDs must not contain empty GUIDs.");
+
+        RuleFor(x => x.OptionIds)
+            .Must(ids => ids == null || ids.Count == ids.Distinct().Count())
+            .WithMessage("Option IDs must not contain duplicates.");
     }
 }

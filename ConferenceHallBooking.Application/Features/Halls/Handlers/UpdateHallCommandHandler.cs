@@ -1,4 +1,5 @@
 using ConferenceHallBooking.Application.DTOs.Halls;
+using ConferenceHallBooking.Application.Extensions;
 using ConferenceHallBooking.Application.Features.Halls.Commands;
 using ConferenceHallBooking.Application.Mappers;
 using ConferenceHallBooking.Domain.Entities;
@@ -25,7 +26,7 @@ public class UpdateHallCommandHandler(
 
         hall.Update(request.Name, request.Capacity, request.BaseHourlyRate);
 
-        await SynchronizeOptionsAsync(hall, request.Options, cancellationToken);
+        await SynchronizeOptionsAsync(hall, request.OptionIds, cancellationToken);
 
         hallRepository.Update(hall);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -36,27 +37,18 @@ public class UpdateHallCommandHandler(
         return HallMapper.MapToResponse(updated);
     }
 
-    private async Task SynchronizeOptionsAsync(Hall hall, List<DTOs.Options.InlineOption>? targetOptions, CancellationToken cancellationToken)
+    private async Task SynchronizeOptionsAsync(Hall hall, List<Guid>? targetOptionIds, CancellationToken cancellationToken)
     {
-        var desiredIds = new HashSet<Guid>();
+        HashSet<Guid> desiredIds;
 
-        if (targetOptions is { Count: > 0 })
+        if (targetOptionIds is { Count: > 0 })
         {
-            foreach (var inline in targetOptions)
-            {
-                var existing = await optionRepository.GetByNameAsync(inline.Name, cancellationToken);
-
-                if (existing is not null)
-                {
-                    desiredIds.Add(existing.Id);
-                }
-                else
-                {
-                    var option = new Option(inline.Name, inline.Price);
-                    await optionRepository.AddAsync(option, cancellationToken);
-                    desiredIds.Add(option.Id);
-                }
-            }
+            await optionRepository.GetByIdsOrThrowAsync(targetOptionIds, cancellationToken);
+            desiredIds = new HashSet<Guid>(targetOptionIds);
+        }
+        else
+        {
+            desiredIds = [];
         }
 
         var currentIds = new HashSet<Guid>(hall.HallOptions.Select(ho => ho.OptionId));

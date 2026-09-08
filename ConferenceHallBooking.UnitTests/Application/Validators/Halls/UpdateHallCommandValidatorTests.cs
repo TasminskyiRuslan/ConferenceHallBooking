@@ -19,6 +19,16 @@ public class UpdateHallCommandValidatorTests
     }
 
     [Fact]
+    public async Task Validate_WhenCommandWithValidOptionIds_ShouldNotHaveValidationError()
+    {
+        var command = new UpdateHallCommand(Guid.NewGuid(), "Test Hall", 10, 100m, [Guid.NewGuid(), Guid.NewGuid()]);
+
+        var result = await _validator.ValidateAsync(command);
+
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Validate_WhenIdIsEmpty_ShouldHaveValidationError()
     {
         var command = new UpdateHallCommand(Guid.Empty, "Test Hall", 10, 100m, null);
@@ -78,5 +88,28 @@ public class UpdateHallCommandValidatorTests
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(UpdateHallCommand.BaseHourlyRate));
+    }
+
+    [Fact]
+    public async Task Validate_WhenOptionIdsContainsEmptyGuid_ShouldHaveValidationError()
+    {
+        var command = new UpdateHallCommand(Guid.NewGuid(), "Test Hall", 10, 100m, [Guid.NewGuid(), Guid.Empty]);
+
+        var result = await _validator.ValidateAsync(command);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(UpdateHallCommand.OptionIds));
+    }
+
+    [Fact]
+    public async Task Validate_WhenOptionIdsContainsDuplicates_ShouldHaveValidationError()
+    {
+        var id = Guid.NewGuid();
+        var command = new UpdateHallCommand(Guid.NewGuid(), "Test Hall", 10, 100m, [id, id]);
+
+        var result = await _validator.ValidateAsync(command);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(UpdateHallCommand.OptionIds));
     }
 }
