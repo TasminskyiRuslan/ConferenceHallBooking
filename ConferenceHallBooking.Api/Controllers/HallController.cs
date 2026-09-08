@@ -53,11 +53,11 @@ public class HallController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(
         Guid id,
-        [FromBody] UpdateHallRequest request,
+        [FromBody] UpdateHallRequest body,
         CancellationToken cancellationToken)
     {
         var hall = await sender.Send(
-            new UpdateHallCommand(id, request.Name, request.Capacity, request.BaseHourlyRate, request.OptionIds),
+            new UpdateHallCommand(id, body.Name, body.Capacity, body.BaseHourlyRate, body.OptionIds),
             cancellationToken);
         return Ok(hall);
     }

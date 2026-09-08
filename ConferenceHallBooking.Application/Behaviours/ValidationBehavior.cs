@@ -5,6 +5,10 @@ using ValidationException = ConferenceHallBooking.Domain.Exceptions.ValidationEx
 
 namespace ConferenceHallBooking.Application.Behaviours;
 
+/// <summary>
+/// MediatR pipeline behavior that runs FluentValidation validators before command handlers.
+/// Collects all validation failures and throws a single <see cref="ValidationException"/> if any exist.
+/// </summary>
 public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull

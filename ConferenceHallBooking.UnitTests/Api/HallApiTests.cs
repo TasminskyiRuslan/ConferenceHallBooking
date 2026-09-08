@@ -29,7 +29,7 @@ public class HallApiTests : IClassFixture<TestWebApplicationFactory>, IAsyncLife
     [Fact]
     public async Task GetById_WhenHallExists_ShouldReturn200WithHall()
     {
-        var optionResponse = await _client.PostAsJsonAsync("/api/option", new { Name = "Projector", Price = 500m });
+        var optionResponse = await _client.PostAsJsonAsync("/api/option", new { Name = $"Projector_{Guid.NewGuid():N}", Price = 500m });
         var option = await optionResponse.Content.ReadFromJsonAsync<OptionResponse>();
 
         var createResponse = await _client.PostAsJsonAsync("/api/hall", new
@@ -75,9 +75,9 @@ public class HallApiTests : IClassFixture<TestWebApplicationFactory>, IAsyncLife
     [Fact]
     public async Task Create_WithValidData_ShouldReturn201WithLocation()
     {
-        var optionResponse1 = await _client.PostAsJsonAsync("/api/option", new { Name = "Projector", Price = 500m });
+        var optionResponse1 = await _client.PostAsJsonAsync("/api/option", new { Name = $"Projector_{Guid.NewGuid():N}", Price = 500m });
         var option1 = await optionResponse1.Content.ReadFromJsonAsync<OptionResponse>();
-        var optionResponse2 = await _client.PostAsJsonAsync("/api/option", new { Name = "Wi-Fi", Price = 300m });
+        var optionResponse2 = await _client.PostAsJsonAsync("/api/option", new { Name = $"Wi-Fi_{Guid.NewGuid():N}", Price = 300m });
         var option2 = await optionResponse2.Content.ReadFromJsonAsync<OptionResponse>();
 
         var command = new
@@ -221,7 +221,7 @@ public class HallApiTests : IClassFixture<TestWebApplicationFactory>, IAsyncLife
     [Fact]
     public async Task Update_WithValidData_ShouldReturn200WithUpdatedHall()
     {
-        var optionResponse = await _client.PostAsJsonAsync("/api/option", new { Name = "Projector", Price = 500m });
+        var optionResponse = await _client.PostAsJsonAsync("/api/option", new { Name = $"Projector_{Guid.NewGuid():N}", Price = 500m });
         var option = await optionResponse.Content.ReadFromJsonAsync<OptionResponse>();
 
         var createResponse = await _client.PostAsJsonAsync("/api/hall", new

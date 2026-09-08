@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ConferenceHallBooking.Infrastructure.Repositories;
 
+/// <summary>
+/// EF Core repository for managing <see cref="User"/> entity data access.
+/// </summary>
 public class UserRepository(AppDbContext context) : IUserRepository
 {
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)

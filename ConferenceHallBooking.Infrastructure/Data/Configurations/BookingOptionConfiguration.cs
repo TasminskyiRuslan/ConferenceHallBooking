@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ConferenceHallBooking.Infrastructure.Data.Configurations;
 
+/// <summary>
+/// EF Core configuration for the <see cref="BookingOption"/> entity (many-to-many join).
+/// Option FK uses Restrict to prevent deletion of options linked to bookings.
+/// </summary>
 public class BookingOptionConfiguration : IEntityTypeConfiguration<BookingOption>
 {
     public void Configure(EntityTypeBuilder<BookingOption> builder)

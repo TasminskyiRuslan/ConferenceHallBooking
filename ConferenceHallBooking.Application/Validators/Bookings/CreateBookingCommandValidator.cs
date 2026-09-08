@@ -17,5 +17,13 @@ public class CreateBookingCommandValidator : AbstractValidator<CreateBookingComm
         RuleFor(x => x.DurationHours)
             .GreaterThan(0).WithMessage("Booking duration must be greater than zero.")
             .LessThanOrEqualTo(24).WithMessage("Booking duration cannot exceed 24 hours.");
+
+        RuleFor(x => x.OptionIds)
+            .Must(ids => ids == null || ids.All(id => id != Guid.Empty))
+            .WithMessage("Option IDs must not contain empty GUIDs.");
+
+        RuleFor(x => x.OptionIds)
+            .Must(ids => ids == null || ids.Count == ids.Distinct().Count())
+            .WithMessage("Option IDs must not contain duplicates.");
     }
 }

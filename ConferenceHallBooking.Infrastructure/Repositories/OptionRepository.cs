@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ConferenceHallBooking.Infrastructure.Repositories;
 
+/// <summary>
+/// EF Core repository for managing <see cref="Option"/> entity data access.
+/// </summary>
 public class OptionRepository(AppDbContext context) : IOptionRepository
 {
     public async Task<Option?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

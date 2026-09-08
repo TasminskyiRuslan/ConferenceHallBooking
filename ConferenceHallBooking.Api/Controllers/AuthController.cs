@@ -18,7 +18,7 @@ public class AuthController(ISender sender) : ControllerBase
     /// Registers a new user account and returns a JWT token.
     /// </summary>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register(
@@ -26,7 +26,7 @@ public class AuthController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(Login), new { }, result);
+        return Ok(result);
     }
 
     /// <summary>

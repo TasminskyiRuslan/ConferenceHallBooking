@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ConferenceHallBooking.Infrastructure.Data.Configurations;
 
+/// <summary>
+/// EF Core configuration for the <see cref="Hall"/> entity.
+/// </summary>
 public class HallConfiguration : IEntityTypeConfiguration<Hall>
 {
     public void Configure(EntityTypeBuilder<Hall> builder)

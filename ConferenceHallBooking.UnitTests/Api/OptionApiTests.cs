@@ -38,7 +38,8 @@ public class OptionApiTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task GetById_WhenOptionExists_ShouldReturn200WithOption()
     {
-        var createResponse = await _client.PostAsJsonAsync("/api/option", new { Name = "Projector", Price = 500m });
+        var optionName = $"Projector_{Guid.NewGuid():N}";
+        var createResponse = await _client.PostAsJsonAsync("/api/option", new { Name = optionName, Price = 500m });
         var created = await createResponse.Content.ReadFromJsonAsync<OptionResponse>();
 
         var response = await _client.GetAsync($"/api/option/{created!.Id}");
@@ -46,7 +47,7 @@ public class OptionApiTests : IClassFixture<TestWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var option = await response.Content.ReadFromJsonAsync<OptionResponse>();
         option.Should().NotBeNull();
-        option!.Name.Should().Be("Projector");
+        option!.Name.Should().Be(optionName);
         option.Price.Should().Be(500m);
     }
 
@@ -73,14 +74,14 @@ public class OptionApiTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task Create_WithValidData_ShouldReturn201WithOption()
     {
-        var command = new { Name = "Projector", Price = 500m };
+        var command = new { Name = $"Projector_{Guid.NewGuid():N}", Price = 500m };
 
         var response = await _client.PostAsJsonAsync("/api/option", command);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var option = await response.Content.ReadFromJsonAsync<OptionResponse>();
         option.Should().NotBeNull();
-        option!.Name.Should().Be("Projector");
+        option!.Name.Should().Be(command.Name);
         option.Price.Should().Be(500m);
     }
 
@@ -123,7 +124,7 @@ public class OptionApiTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task Update_WhenOptionExists_ShouldReturn200WithUpdatedOption()
     {
-        var createResponse = await _client.PostAsJsonAsync("/api/option", new { Name = "Projector", Price = 500m });
+        var createResponse = await _client.PostAsJsonAsync("/api/option", new { Name = $"Projector_{Guid.NewGuid():N}", Price = 500m });
         var created = await createResponse.Content.ReadFromJsonAsync<OptionResponse>();
 
         var updateResponse = await _client.PutAsJsonAsync($"/api/option/{created!.Id}", new { Name = "HD Projector", Price = 750m });
@@ -145,7 +146,7 @@ public class OptionApiTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task Update_WithEmptyName_ShouldReturn400()
     {
-        var createResponse = await _client.PostAsJsonAsync("/api/option", new { Name = "Projector", Price = 500m });
+        var createResponse = await _client.PostAsJsonAsync("/api/option", new { Name = $"Projector_{Guid.NewGuid():N}", Price = 500m });
         var created = await createResponse.Content.ReadFromJsonAsync<OptionResponse>();
 
         var response = await _client.PutAsJsonAsync($"/api/option/{created!.Id}", new { Name = "", Price = 500m });
@@ -160,7 +161,7 @@ public class OptionApiTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task Delete_WhenOptionExists_ShouldReturn204()
     {
-        var createResponse = await _client.PostAsJsonAsync("/api/option", new { Name = "Projector", Price = 500m });
+        var createResponse = await _client.PostAsJsonAsync("/api/option", new { Name = $"Projector_{Guid.NewGuid():N}", Price = 500m });
         var created = await createResponse.Content.ReadFromJsonAsync<OptionResponse>();
 
         var response = await _client.DeleteAsync($"/api/option/{created!.Id}");

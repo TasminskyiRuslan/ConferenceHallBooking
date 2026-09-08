@@ -2,6 +2,9 @@
 
 namespace ConferenceHallBooking.Application.DTOs.Bookings;
 
+/// <summary>
+/// Response model for a conference hall booking.
+/// </summary>
 public record BookingResponse(
     Guid Id,
     Guid HallId,

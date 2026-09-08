@@ -48,12 +48,22 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
             HallOptionNotSupportedException optionEx => CreateProblemDetails(
                 StatusCodes.Status409Conflict, "Business rule violation", optionEx.Message, traceId, [("errorCode", optionEx.ErrorCode)]),
 
+            HallOptionInUseException optionInUseEx => CreateProblemDetails(
+                StatusCodes.Status409Conflict, "Business rule violation", optionInUseEx.Message, traceId, [("errorCode", optionInUseEx.ErrorCode)]),
+
             HallNameAlreadyExistsException nameEx => CreateProblemDetails(
                 StatusCodes.Status409Conflict,
                 "Hall name conflict",
                 nameEx.Message,
                 traceId,
                 [("errorCode", nameEx.ErrorCode)]),
+
+            OptionNameAlreadyExistsException optionNameEx => CreateProblemDetails(
+                StatusCodes.Status409Conflict,
+                "Option name conflict",
+                optionNameEx.Message,
+                traceId,
+                [("errorCode", optionNameEx.ErrorCode)]),
 
             EmailAlreadyExistsException emailEx => CreateProblemDetails(
                 StatusCodes.Status409Conflict,

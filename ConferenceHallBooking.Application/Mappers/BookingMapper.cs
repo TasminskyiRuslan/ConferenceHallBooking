@@ -4,8 +4,15 @@ using ConferenceHallBooking.Domain.Entities;
 
 namespace ConferenceHallBooking.Application.Mappers;
 
+/// <summary>
+/// Maps Booking domain entities to BookingResponse DTOs.
+/// </summary>
 public static class BookingMapper
 {
+    /// <summary>
+    /// Converts a <see cref="Booking"/> entity to a <see cref="BookingResponse"/> DTO
+    /// using pre-calculated pricing.
+    /// </summary>
     public static BookingResponse MapToResponse(
         Booking booking,
         Hall hall,
@@ -35,6 +42,10 @@ public static class BookingMapper
             booking.TotalPrice);
     }
 
+    /// <summary>
+    /// Converts a <see cref="Booking"/> entity to a <see cref="BookingResponse"/> DTO,
+    /// reconstructing pricing from stored totals.
+    /// </summary>
     public static BookingResponse MapToResponse(
         Booking booking,
         Hall hall,

@@ -74,7 +74,7 @@ public class PricingService(IOptions<PricingSettings> settings) : IPricingServic
             var segmentStart = boundaryPoints[i];
             var segmentEnd = boundaryPoints[i + 1];
 
-            var hours = (decimal)(segmentEnd - segmentStart).Ticks / TimeSpan.TicksPerHour;
+            var hours = (decimal)(segmentEnd - segmentStart).TotalHours;
             var multiplier = GetMultiplierForSegment(segmentStart, segmentEnd, referenceOffset, rules);
 
             hallCost += baseHourlyRate * hours * multiplier;

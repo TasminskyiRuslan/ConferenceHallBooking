@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ConferenceHallBooking.Infrastructure.Data.Configurations;
 
+/// <summary>
+/// EF Core configuration for the <see cref="Option"/> entity.
+/// </summary>
 public class OptionConfiguration : IEntityTypeConfiguration<Option>
 {
     public void Configure(EntityTypeBuilder<Option> builder)

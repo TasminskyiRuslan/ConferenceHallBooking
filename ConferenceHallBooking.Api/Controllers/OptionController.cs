@@ -50,7 +50,7 @@ public class OptionController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         var option = await sender.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetAll), new { id = option.Id }, option);
+        return CreatedAtAction(nameof(GetById), new { id = option.Id }, option);
     }
 
     /// <summary>

@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ConferenceHallBooking.Infrastructure.Data.Configurations;
 
+/// <summary>
+/// EF Core configuration for the <see cref="HallOption"/> entity (many-to-many join).
+/// Option FK uses Restrict to prevent accidental cascade deletion of linked options.
+/// </summary>
 public class HallOptionConfiguration : IEntityTypeConfiguration<HallOption>
 {
     public void Configure(EntityTypeBuilder<HallOption> builder)
@@ -18,6 +22,6 @@ public class HallOptionConfiguration : IEntityTypeConfiguration<HallOption>
         builder.HasOne(ho => ho.Option)
             .WithMany(o => o.HallOptions)
             .HasForeignKey(ho => ho.OptionId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -5,6 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ConferenceHallBooking.Infrastructure.Repositories;
 
+/// <summary>
+/// EF Core repository for managing <see cref="Booking"/> entity data access.
+/// Provides server-side queries to avoid N+1 issues.
+/// </summary>
 public class BookingRepository(AppDbContext context) : IBookingRepository
 {
     public async Task<Booking?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -22,9 +26,7 @@ public class BookingRepository(AppDbContext context) : IBookingRepository
         CancellationToken cancellationToken = default)
     {
         return await context.Bookings
-            .AnyAsync(b => b.HallId == hallId
-                        && startTime < b.EndTime
-                        && endTime > b.StartTime, cancellationToken);
+            .AnyAsync(b => b.HallId == hallId && startTime < b.EndTime && endTime > b.StartTime, cancellationToken);
     }
 
     public async Task<int> GetBookingCountByHallIdAsync(
@@ -47,8 +49,34 @@ public class BookingRepository(AppDbContext context) : IBookingRepository
     {
         return await context.Bookings
             .AsNoTracking()
-            .Where(b => b.StartTime >= from && b.StartTime < to)
             .Include(b => b.Hall)
+            .Where(b => b.StartTime >= from && b.StartTime < to)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetUsedOptionIdsByHallAsync(
+        Guid hallId,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.BookingOptions
+            .AsNoTracking()
+            .Where(bo => bo.Booking.HallId == hallId)
+            .Select(bo => bo.OptionId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<bool> IsOptionUsedInAnyBookingAsync(Guid optionId, CancellationToken cancellationToken = default)
+    {
+        return await context.BookingOptions
+            .AsNoTracking()
+            .AnyAsync(bo => bo.OptionId == optionId, cancellationToken);
+    }
+
+    public async Task<int> GetBookingCountByOptionIdAsync(Guid optionId, CancellationToken cancellationToken = default)
+    {
+        return await context.BookingOptions
+            .AsNoTracking()
+            .CountAsync(bo => bo.OptionId == optionId, cancellationToken);
     }
 }

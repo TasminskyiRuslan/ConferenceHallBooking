@@ -196,7 +196,7 @@ public class HallHandlerTests
     [Fact]
     public async Task UpdateHallCommandHandler_WhenHallDoesNotExist_ShouldThrowNotFoundException()
     {
-        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _bookingRepository, _unitOfWork);
         var hallId = Guid.NewGuid();
         var command = new UpdateHallCommand(hallId, "Updated Name", 150, 300m, []);
 
@@ -214,7 +214,7 @@ public class HallHandlerTests
     [Fact]
     public async Task UpdateHallCommandHandler_WhenValid_ShouldUpdateHallPropertiesAndReturnResponse()
     {
-        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _bookingRepository, _unitOfWork);
         var hallId = Guid.NewGuid();
         var existingHall = new Hall("Old Name", 50, 100m);
         var command = new UpdateHallCommand(hallId, "New Name", 80, 150m, []);
@@ -240,7 +240,7 @@ public class HallHandlerTests
     [Fact]
     public async Task UpdateHallCommandHandler_WithExistingOptionIds_ShouldAddThemToHall()
     {
-        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _bookingRepository, _unitOfWork);
         var hallId = Guid.NewGuid();
         var existingHall = new Hall("Existing Hall", 50, 100m);
         var optionId = Guid.NewGuid();
@@ -274,7 +274,7 @@ public class HallHandlerTests
     [Fact]
     public async Task UpdateHallCommandHandler_WhenOptionIdsIsEmpty_ShouldRemoveAllExistingOptions()
     {
-        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _bookingRepository, _unitOfWork);
         var hallId = Guid.NewGuid();
         var existingHall = new Hall("Existing Hall", 50, 100m);
         existingHall.AddOption(Guid.NewGuid());
@@ -302,7 +302,7 @@ public class HallHandlerTests
     [Fact]
     public async Task UpdateHallCommandHandler_WhenReplacingSomeOptions_ShouldRemoveOldAndAddNew()
     {
-        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _bookingRepository, _unitOfWork);
         var hallId = Guid.NewGuid();
         var existingHall = new Hall("Existing Hall", 50, 100m);
         var keepOptionId = Guid.NewGuid();
@@ -349,7 +349,7 @@ public class HallHandlerTests
     [Fact]
     public async Task UpdateHallCommandHandler_WhenOptionIdsDoNotExist_ShouldThrowOptionsNotFoundException()
     {
-        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _bookingRepository, _unitOfWork);
         var hallId = Guid.NewGuid();
         var existingHall = new Hall("Existing Hall", 50, 100m);
         var nonexistentOptionId = Guid.NewGuid();
@@ -375,7 +375,7 @@ public class HallHandlerTests
     [Fact]
     public async Task UpdateHallCommandHandler_WhenNewNameAlreadyExists_ShouldThrowHallNameAlreadyExistsException()
     {
-        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _bookingRepository, _unitOfWork);
         var hallId = Guid.NewGuid();
         var existingHall = new Hall("Old Name", 50, 100m);
         var command = new UpdateHallCommand(hallId, "Existing Hall", 50, 100m, []);

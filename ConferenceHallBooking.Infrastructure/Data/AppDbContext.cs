@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ConferenceHallBooking.Infrastructure.Data;
 
+/// <summary>
+/// Application database context. Applies all entity configurations from this assembly.
+/// </summary>
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)

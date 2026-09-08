@@ -25,7 +25,7 @@ public class AuthApiTests : IClassFixture<TestWebApplicationFactory>
             FullName = "Test User"
         });
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
         result.Should().NotBeNull();
         result!.Token.Should().NotBeNullOrEmpty();

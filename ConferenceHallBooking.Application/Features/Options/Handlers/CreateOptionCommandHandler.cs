@@ -17,7 +17,7 @@ public class CreateOptionCommandHandler(
 
         if (existing is not null)
         {
-            return new OptionResponse(existing.Id, existing.Name, existing.Price);
+            throw new OptionNameAlreadyExistsException(request.Name);
         }
 
         var option = new Option(request.Name, request.Price);

@@ -12,6 +12,7 @@ namespace ConferenceHallBooking.Application.Features.Halls.Handlers;
 public class UpdateHallCommandHandler(
     IHallRepository hallRepository,
     IOptionRepository optionRepository,
+    IBookingRepository bookingRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateHallCommand, HallResponse>
 {
     public async Task<HallResponse> Handle(UpdateHallCommand request, CancellationToken cancellationToken)
@@ -53,11 +54,21 @@ public class UpdateHallCommandHandler(
 
         var currentIds = new HashSet<Guid>(hall.HallOptions.Select(ho => ho.OptionId));
 
-        foreach (var currentId in currentIds)
+        var optionIdsToRemove = currentIds.Where(id => !desiredIds.Contains(id)).ToList();
+
+        if (optionIdsToRemove.Count > 0)
         {
-            if (!desiredIds.Contains(currentId))
+            var usedOptionIds = await bookingRepository.GetUsedOptionIdsByHallAsync(hall.Id, cancellationToken);
+            var usedIdsToRemove = optionIdsToRemove.Where(id => usedOptionIds.Contains(id)).ToList();
+
+            if (usedIdsToRemove.Count > 0)
             {
-                hall.RemoveOption(currentId);
+                throw new HallOptionInUseException(hall.Id, usedIdsToRemove);
+            }
+
+            foreach (var id in optionIdsToRemove)
+            {
+                hall.RemoveOption(id);
             }
         }
 

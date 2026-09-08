@@ -37,7 +37,7 @@ ConferenceHallBooking/
 dotnet run --project ConferenceHallBooking.Api
 ```
 
-API starts at `https://localhost:5001` (Swagger at `/swagger`).
+API starts at `http://localhost:5087` or `https://localhost:7149` (Swagger at `/swagger`).
 
 ### Run Tests
 
@@ -70,6 +70,16 @@ dotnet test
 |--------|-------|-------------|
 | POST | `/api/booking` | Book a hall |
 | GET | `/api/booking/{id}` | Get booking by ID |
+
+### Options (requires Bearer token)
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/option` | Get all service options |
+| GET | `/api/option/{id}` | Get option by ID |
+| POST | `/api/option` | Create a new service option |
+| PUT | `/api/option/{id}` | Update an existing option |
+| DELETE | `/api/option/{id}` | Delete a service option |
 
 ### Reports (requires Bearer token)
 
