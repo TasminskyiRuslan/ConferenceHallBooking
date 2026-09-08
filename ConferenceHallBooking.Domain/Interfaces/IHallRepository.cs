@@ -11,6 +11,12 @@ public interface IHallRepository
         int capacity,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Hall>> GetAllWithBookingsAsync(
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsByNameAsync(string name, CancellationToken cancellationToken = default);
     Task AddAsync(Hall hall, CancellationToken cancellationToken = default);
     void Update(Hall hall);
     void Delete(Hall hall);

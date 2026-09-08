@@ -15,6 +15,7 @@ public class CreateBookingCommandValidator : AbstractValidator<CreateBookingComm
             .WithMessage("Booking start time cannot be in the past.");
 
         RuleFor(x => x.DurationHours)
-            .GreaterThan(0).WithMessage("Booking duration must be greater than zero.");
+            .GreaterThan(0).WithMessage("Booking duration must be greater than zero.")
+            .LessThanOrEqualTo(24).WithMessage("Booking duration cannot exceed 24 hours.");
     }
 }

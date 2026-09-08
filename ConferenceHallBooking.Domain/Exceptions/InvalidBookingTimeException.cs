@@ -1,10 +1,9 @@
 namespace ConferenceHallBooking.Domain.Exceptions;
 
+/// <summary>
+/// Thrown when a booking's end time is not after its start time.
+/// </summary>
 public class InvalidBookingTimeException(DateTimeOffset startTime, DateTimeOffset endTime)
     : BusinessRuleException(
-        $"The booking end time must be strictly after the start time. Start: {startTime:O}, End: {endTime:O}.",
-        "INVALID_BOOKING_TIME")
-{
-    public DateTimeOffset StartTime { get; } = startTime;
-    public DateTimeOffset EndTime { get; } = endTime;
-}
+        $"Booking end time ({endTime:yyyy-MM-dd HH:mm}) must be after start time ({startTime:yyyy-MM-dd HH:mm}).",
+        "INVALID_BOOKING_TIME");

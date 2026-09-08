@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<HallOption> HallOptions => Set<HallOption>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<BookingOption> BookingOptions => Set<BookingOption>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

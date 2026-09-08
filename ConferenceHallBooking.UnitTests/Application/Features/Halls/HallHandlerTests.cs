@@ -1,4 +1,5 @@
 using ConferenceHallBooking.Application.DTOs.Halls;
+using ConferenceHallBooking.Application.DTOs.Options;
 using ConferenceHallBooking.Application.Features.Halls.Commands;
 using ConferenceHallBooking.Application.Features.Halls.Handlers;
 using ConferenceHallBooking.Application.Features.Halls.Queries;
@@ -55,28 +56,33 @@ public class HallHandlerTests
     }
 
     [Fact]
-    public async Task CreateHallCommandHandler_WithValidOptions_ShouldAddOptionsToHall()
+    public async Task CreateHallCommandHandler_WithExistingOptions_ShouldAddOptionsToHall()
     {
         var handler = new CreateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
         var optionId1 = Guid.NewGuid();
         var optionId2 = Guid.NewGuid();
-        var command = new CreateHallCommand("Grand Hall", 100, 250m, [optionId1, optionId2]);
+        var existingOption1 = new Option("Projector", 50m);
+        var existingOption2 = new Option("Wi-Fi", 30m);
 
-        var existingOptions = new List<Option>
-        {
-            new("Projector", 50m),
-            new("Wi-Fi", 30m)
-        };
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(existingOption1, optionId1);
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(existingOption2, optionId2);
 
-        _optionRepository.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns(existingOptions);
+        var command = new CreateHallCommand("Grand Hall", 100, 250m, [
+            new InlineOption("Projector", 50m),
+            new InlineOption("Wi-Fi", 30m)
+        ]);
+
+        _optionRepository.GetByNameAsync("Projector", Arg.Any<CancellationToken>())
+            .Returns(existingOption1);
+        _optionRepository.GetByNameAsync("Wi-Fi", Arg.Any<CancellationToken>())
+            .Returns(existingOption2);
 
         var createdHall = new Hall(command.Name, command.Capacity, command.BaseHourlyRate);
         createdHall.AddOption(optionId1);
         createdHall.AddOption(optionId2);
 
-        SetHallOptionNavigation(createdHall.HallOptions.First(ho => ho.OptionId == optionId1), existingOptions[0]);
-        SetHallOptionNavigation(createdHall.HallOptions.First(ho => ho.OptionId == optionId2), existingOptions[1]);
+        SetHallOptionNavigation(createdHall.HallOptions.First(ho => ho.OptionId == optionId1), existingOption1);
+        SetHallOptionNavigation(createdHall.HallOptions.First(ho => ho.OptionId == optionId2), existingOption2);
 
         _hallRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(createdHall);
@@ -87,8 +93,82 @@ public class HallHandlerTests
         result.Name.Should().Be("Grand Hall");
         result.Options.Should().HaveCount(2);
 
-        await _optionRepository.Received(1).GetByIdsAsync(
-            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 2),
+        await _optionRepository.Received(1).GetByNameAsync("Projector", Arg.Any<CancellationToken>());
+        await _optionRepository.Received(1).GetByNameAsync("Wi-Fi", Arg.Any<CancellationToken>());
+
+        await _optionRepository.DidNotReceive().AddAsync(Arg.Any<Option>(), Arg.Any<CancellationToken>());
+
+        await _hallRepository.Received(1).AddAsync(
+            Arg.Is<Hall>(h => h.HallOptions.Count == 2),
+            Arg.Any<CancellationToken>());
+
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateHallCommandHandler_WhenOptionsIsNull_ShouldCreateHallWithoutOptions()
+    {
+        var handler = new CreateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var command = new CreateHallCommand("Grand Hall", 100, 250m, null);
+
+        _hallRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(new Hall(command.Name, command.Capacity, command.BaseHourlyRate));
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result.Options.Should().BeEmpty();
+
+        await _optionRepository.DidNotReceive().GetByNameAsync(
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateHallCommandHandler_WhenOptionsDoNotExist_ShouldCreateNewOptions()
+    {
+        var handler = new CreateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var command = new CreateHallCommand("Grand Hall", 100, 250m, [
+            new InlineOption("Projector", 50m),
+            new InlineOption("Screen", 80m)
+        ]);
+
+        _optionRepository.GetByNameAsync("Projector", Arg.Any<CancellationToken>())
+            .Returns((Option?)null);
+        _optionRepository.GetByNameAsync("Screen", Arg.Any<CancellationToken>())
+            .Returns((Option?)null);
+
+        var optionId1 = Guid.NewGuid();
+        var optionId2 = Guid.NewGuid();
+        var createdOption1 = new Option("Projector", 50m);
+        var createdOption2 = new Option("Screen", 80m);
+
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(createdOption1, optionId1);
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(createdOption2, optionId2);
+
+        var createdHall = new Hall(command.Name, command.Capacity, command.BaseHourlyRate);
+        createdHall.AddOption(optionId1);
+        createdHall.AddOption(optionId2);
+
+        SetHallOptionNavigation(createdHall.HallOptions.First(ho => ho.OptionId == optionId1), createdOption1);
+        SetHallOptionNavigation(createdHall.HallOptions.First(ho => ho.OptionId == optionId2), createdOption2);
+
+        _hallRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(createdHall);
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result.Options.Should().HaveCount(2);
+
+        await _optionRepository.Received(1).GetByNameAsync("Projector", Arg.Any<CancellationToken>());
+        await _optionRepository.Received(1).GetByNameAsync("Screen", Arg.Any<CancellationToken>());
+
+        await _optionRepository.Received(1).AddAsync(
+            Arg.Is<Option>(o => o.Name == "Projector" && o.Price == 50m),
+            Arg.Any<CancellationToken>());
+        await _optionRepository.Received(1).AddAsync(
+            Arg.Is<Option>(o => o.Name == "Screen" && o.Price == 80m),
             Arg.Any<CancellationToken>());
 
         await _hallRepository.Received(1).AddAsync(
@@ -99,57 +179,75 @@ public class HallHandlerTests
     }
 
     [Fact]
-    public async Task CreateHallCommandHandler_WhenOptionIdsIsNull_ShouldCreateHallWithoutOptions()
+    public async Task CreateHallCommandHandler_WhenSomeOptionsExistAndSomeNot_ShouldResolveExistingAndCreateNew()
     {
         var handler = new CreateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
-        var command = new CreateHallCommand("Grand Hall", 100, 250m, null!);
+        var existingOptionId = Guid.NewGuid();
+        var existingOption = new Option("Projector", 50m);
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(existingOption, existingOptionId);
+
+        var command = new CreateHallCommand("Grand Hall", 100, 250m, [
+            new InlineOption("Projector", 50m),
+            new InlineOption("Screen", 80m)
+        ]);
+
+        _optionRepository.GetByNameAsync("Projector", Arg.Any<CancellationToken>())
+            .Returns(existingOption);
+        _optionRepository.GetByNameAsync("Screen", Arg.Any<CancellationToken>())
+            .Returns((Option?)null);
+
+        var newOptionId = Guid.NewGuid();
+        var createdOption = new Option("Screen", 80m);
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(createdOption, newOptionId);
+
+        var createdHall = new Hall(command.Name, command.Capacity, command.BaseHourlyRate);
+        createdHall.AddOption(existingOptionId);
+        createdHall.AddOption(newOptionId);
+
+        SetHallOptionNavigation(createdHall.HallOptions.First(ho => ho.OptionId == existingOptionId), existingOption);
+        SetHallOptionNavigation(createdHall.HallOptions.First(ho => ho.OptionId == newOptionId), createdOption);
 
         _hallRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(new Hall(command.Name, command.Capacity, command.BaseHourlyRate));
+            .Returns(createdHall);
 
         var result = await handler.Handle(command, CancellationToken.None);
 
         result.Should().NotBeNull();
-        result.Options.Should().BeEmpty();
+        result.Options.Should().HaveCount(2);
 
-        await _optionRepository.DidNotReceive().GetByIdsAsync(
-            Arg.Any<IReadOnlyCollection<Guid>>(),
+        await _optionRepository.Received(1).GetByNameAsync("Projector", Arg.Any<CancellationToken>());
+        await _optionRepository.Received(1).GetByNameAsync("Screen", Arg.Any<CancellationToken>());
+
+        await _optionRepository.DidNotReceive().AddAsync(
+            Arg.Is<Option>(o => o.Name == "Projector"),
             Arg.Any<CancellationToken>());
+        await _optionRepository.Received(1).AddAsync(
+            Arg.Is<Option>(o => o.Name == "Screen" && o.Price == 80m),
+            Arg.Any<CancellationToken>());
+
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task CreateHallCommandHandler_WhenSomeOptionsDoNotExist_ShouldThrowOptionsNotFoundException()
-    {
-        var handler = new CreateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
-        var optionId1 = Guid.NewGuid();
-        var optionId2 = Guid.NewGuid();
-        var command = new CreateHallCommand("Grand Hall", 100, 250m, [optionId1, optionId2]);
-
-        _optionRepository.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([new Option("Projector", 50m)]);
-
-        var act = () => handler.Handle(command, CancellationToken.None);
-
-        await act.Should().ThrowAsync<OptionsNotFoundException>();
-
-        await _hallRepository.DidNotReceive().AddAsync(Arg.Any<Hall>(), Arg.Any<CancellationToken>());
-        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task CreateHallCommandHandler_WithDuplicateOptionIds_ShouldDeduplicateBeforeValidation()
+    public async Task CreateHallCommandHandler_WithDuplicateOptionNames_ShouldDeduplicateBeforeAdding()
     {
         var handler = new CreateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
         var optionId = Guid.NewGuid();
-        var command = new CreateHallCommand("Grand Hall", 100, 250m, [optionId, optionId, optionId]);
+        var existingOption = new Option("Projector", 50m);
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(existingOption, optionId);
 
-        _optionRepository.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([new Option("Projector", 50m)]);
+        var command = new CreateHallCommand("Grand Hall", 100, 250m, [
+            new InlineOption("Projector", 50m),
+            new InlineOption("Projector", 50m)
+        ]);
+
+        _optionRepository.GetByNameAsync("Projector", Arg.Any<CancellationToken>())
+            .Returns(existingOption);
 
         var createdHall = new Hall(command.Name, command.Capacity, command.BaseHourlyRate);
         createdHall.AddOption(optionId);
 
-        SetHallOptionNavigation(createdHall.HallOptions.First(), new Option("Projector", 50m));
+        SetHallOptionNavigation(createdHall.HallOptions.First(), existingOption);
 
         _hallRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(createdHall);
@@ -159,9 +257,24 @@ public class HallHandlerTests
         result.Should().NotBeNull();
         result.Options.Should().HaveCount(1);
 
-        await _optionRepository.Received(1).GetByIdsAsync(
-            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 1),
-            Arg.Any<CancellationToken>());
+        await _optionRepository.Received(2).GetByNameAsync("Projector", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateHallCommandHandler_WhenNameAlreadyExists_ShouldThrowHallNameAlreadyExistsException()
+    {
+        var handler = new CreateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var command = new CreateHallCommand("Grand Hall", 100, 250m, []);
+
+        _hallRepository.ExistsByNameAsync("Grand Hall", Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var act = () => handler.Handle(command, CancellationToken.None);
+
+        await act.Should().ThrowAsync<HallNameAlreadyExistsException>();
+
+        await _hallRepository.DidNotReceive().AddAsync(Arg.Any<Hall>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     #endregion
@@ -213,26 +326,24 @@ public class HallHandlerTests
     }
 
     [Fact]
-    public async Task UpdateHallCommandHandler_WithNewOptions_ShouldAddThemToHall()
+    public async Task UpdateHallCommandHandler_WithExistingOptions_ShouldAddThemToHall()
     {
         var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
         var hallId = Guid.NewGuid();
         var existingHall = new Hall("Existing Hall", 50, 100m);
-        var newOptionId = Guid.NewGuid();
-        var newOption = new Option("New Option", 40m);
+        var optionId = Guid.NewGuid();
+        var existingOption = new Option("Projector", 40m);
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(existingOption, optionId);
 
-        var hallAfterSync = new Hall("Existing Hall", 50, 100m);
-        hallAfterSync.Update("Updated Hall", 60, 120m);
-        hallAfterSync.AddOption(newOptionId);
-        SetHallOptionNavigation(hallAfterSync.HallOptions.First(), newOption);
-
-        var command = new UpdateHallCommand(hallId, "Updated Hall", 60, 120m, [newOptionId]);
+        var command = new UpdateHallCommand(hallId, "Updated Hall", 60, 120m, [
+            new InlineOption("Projector", 40m)
+        ]);
 
         _hallRepository.GetByIdAsync(hallId, Arg.Any<CancellationToken>())
-            .Returns(existingHall, hallAfterSync);
+            .Returns(existingHall);
 
-        _optionRepository.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([newOption]);
+        _optionRepository.GetByNameAsync("Projector", Arg.Any<CancellationToken>())
+            .Returns(existingOption);
 
         var result = await handler.Handle(command, CancellationToken.None);
 
@@ -240,17 +351,18 @@ public class HallHandlerTests
         result.Name.Should().Be("Updated Hall");
         result.Capacity.Should().Be(60);
         result.BaseHourlyRate.Should().Be(120m);
-        result.Options.Should().HaveCount(1);
 
         existingHall.HallOptions.Should().HaveCount(1);
-        existingHall.HallOptions.First().OptionId.Should().Be(newOptionId);
+        existingHall.HallOptions.First().OptionId.Should().Be(optionId);
+
+        await _optionRepository.Received(1).GetByNameAsync("Projector", Arg.Any<CancellationToken>());
 
         _hallRepository.Received(1).Update(existingHall);
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task UpdateHallCommandHandler_WhenOptionIdsIsEmpty_ShouldRemoveAllExistingOptions()
+    public async Task UpdateHallCommandHandler_WhenOptionsIsEmpty_ShouldRemoveAllExistingOptions()
     {
         var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
         var hallId = Guid.NewGuid();
@@ -269,8 +381,8 @@ public class HallHandlerTests
         result.Options.Should().BeEmpty();
         existingHall.HallOptions.Should().BeEmpty();
 
-        await _optionRepository.DidNotReceive().GetByIdsAsync(
-            Arg.Any<IReadOnlyCollection<Guid>>(),
+        await _optionRepository.DidNotReceive().GetByNameAsync(
+            Arg.Any<string>(),
             Arg.Any<CancellationToken>());
 
         _hallRepository.Received(1).Update(existingHall);
@@ -288,6 +400,8 @@ public class HallHandlerTests
         var addOptionId = Guid.NewGuid();
         var keepOption = new Option("Keep Option", 30m);
         var addOption = new Option("Add Option", 40m);
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(keepOption, keepOptionId);
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(addOption, addOptionId);
 
         existingHall.AddOption(keepOptionId);
         existingHall.AddOption(removeOptionId);
@@ -299,13 +413,18 @@ public class HallHandlerTests
         SetHallOptionNavigation(hallAfterSync.HallOptions.First(ho => ho.OptionId == keepOptionId), keepOption);
         SetHallOptionNavigation(hallAfterSync.HallOptions.First(ho => ho.OptionId == addOptionId), addOption);
 
-        var command = new UpdateHallCommand(hallId, "Updated Hall", 60, 120m, [keepOptionId, addOptionId]);
+        var command = new UpdateHallCommand(hallId, "Updated Hall", 60, 120m, [
+            new InlineOption("Keep Option", 30m),
+            new InlineOption("Add Option", 40m)
+        ]);
 
         _hallRepository.GetByIdAsync(hallId, Arg.Any<CancellationToken>())
             .Returns(existingHall, hallAfterSync);
 
-        _optionRepository.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([keepOption, addOption]);
+        _optionRepository.GetByNameAsync("Keep Option", Arg.Any<CancellationToken>())
+            .Returns(keepOption);
+        _optionRepository.GetByNameAsync("Add Option", Arg.Any<CancellationToken>())
+            .Returns(addOption);
 
         var result = await handler.Handle(command, CancellationToken.None);
 
@@ -321,24 +440,63 @@ public class HallHandlerTests
     }
 
     [Fact]
-    public async Task UpdateHallCommandHandler_WhenSomeOptionsDoNotExist_ShouldThrowOptionsNotFoundException()
+    public async Task UpdateHallCommandHandler_WhenOptionsDoNotExist_ShouldCreateNewOptions()
     {
         var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
         var hallId = Guid.NewGuid();
         var existingHall = new Hall("Existing Hall", 50, 100m);
-        var invalidOptionId = Guid.NewGuid();
 
-        var command = new UpdateHallCommand(hallId, "Updated Hall", 60, 120m, [invalidOptionId]);
+        var command = new UpdateHallCommand(hallId, "Updated Hall", 60, 120m, [
+            new InlineOption("Projector", 50m)
+        ]);
 
         _hallRepository.GetByIdAsync(hallId, Arg.Any<CancellationToken>())
             .Returns(existingHall);
 
-        _optionRepository.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([]);
+        _optionRepository.GetByNameAsync("Projector", Arg.Any<CancellationToken>())
+            .Returns((Option?)null);
+
+        var newOption = new Option("Projector", 50m);
+        typeof(Option).GetProperty(nameof(Option.Id))!.SetValue(newOption, Guid.NewGuid());
+
+        var hallAfterSync = new Hall("Existing Hall", 50, 100m);
+        hallAfterSync.Update("Updated Hall", 60, 120m);
+        hallAfterSync.AddOption(newOption.Id);
+        SetHallOptionNavigation(hallAfterSync.HallOptions.First(), newOption);
+
+        _hallRepository.GetByIdAsync(hallId, Arg.Any<CancellationToken>())
+            .Returns(existingHall, hallAfterSync);
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result.Name.Should().Be("Updated Hall");
+
+        await _optionRepository.Received(1).GetByNameAsync("Projector", Arg.Any<CancellationToken>());
+
+        existingHall.HallOptions.Should().HaveCount(1);
+
+        _hallRepository.Received(1).Update(existingHall);
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateHallCommandHandler_WhenNewNameAlreadyExists_ShouldThrowHallNameAlreadyExistsException()
+    {
+        var handler = new UpdateHallCommandHandler(_hallRepository, _optionRepository, _unitOfWork);
+        var hallId = Guid.NewGuid();
+        var existingHall = new Hall("Old Name", 50, 100m);
+        var command = new UpdateHallCommand(hallId, "Existing Hall", 50, 100m, []);
+
+        _hallRepository.GetByIdAsync(hallId, Arg.Any<CancellationToken>())
+            .Returns(existingHall);
+
+        _hallRepository.ExistsByNameAsync("Existing Hall", Arg.Any<CancellationToken>())
+            .Returns(true);
 
         var act = () => handler.Handle(command, CancellationToken.None);
 
-        await act.Should().ThrowAsync<OptionsNotFoundException>();
+        await act.Should().ThrowAsync<HallNameAlreadyExistsException>();
 
         _hallRepository.DidNotReceive().Update(Arg.Any<Hall>());
         await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());

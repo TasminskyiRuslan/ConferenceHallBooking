@@ -39,4 +39,16 @@ public class BookingRepository(AppDbContext context) : IBookingRepository
     {
         await context.Bookings.AddAsync(booking, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Booking>> GetByDateRangeAsync(
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.Bookings
+            .AsNoTracking()
+            .Where(b => b.StartTime >= from && b.StartTime < to)
+            .Include(b => b.Hall)
+            .ToListAsync(cancellationToken);
+    }
 }

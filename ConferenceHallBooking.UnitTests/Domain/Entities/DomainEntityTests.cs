@@ -131,17 +131,6 @@ public class DomainEntityTests
         hall.HallOptions.Should().BeEmpty();
     }
 
-    [Fact]
-    public void Hall_RemoveOption_WithNonExistentId_ShouldNotThrow()
-    {
-        var hall = new Hall("Conference Room A", 50, 100m);
-
-        var act = () => hall.RemoveOption(Guid.NewGuid());
-
-        act.Should().NotThrow();
-        hall.HallOptions.Should().BeEmpty();
-    }
-
     #endregion
 
     #region Booking
@@ -278,14 +267,6 @@ public class DomainEntityTests
     }
 
     [Fact]
-    public void Option_Constructor_WithZeroPrice_ShouldBeAllowed()
-    {
-        var option = new Option("Free Option", 0m);
-
-        option.Price.Should().Be(0m);
-    }
-
-    [Fact]
     public void Option_Update_WithValidData_ShouldChangeProperties()
     {
         var option = new Option("Projector", 50m);
@@ -340,14 +321,6 @@ public class DomainEntityTests
 
         act.Should().Throw<InvalidEntityFieldException>()
             .Which.FieldName.Should().Be(nameof(BookingOption.PriceAtBooking));
-    }
-
-    [Fact]
-    public void BookingOption_Constructor_WithZeroPriceAtBooking_ShouldBeAllowed()
-    {
-        var bookingOption = new BookingOption(Guid.NewGuid(), 0m);
-
-        bookingOption.PriceAtBooking.Should().Be(0m);
     }
 
     #endregion

@@ -1,10 +1,13 @@
 namespace ConferenceHallBooking.Domain.Exceptions;
 
-public class InvalidEntityFieldException(string entityName, string fieldName, string reason)
+/// <summary>
+/// Thrown when an entity field violates validation rules (empty name, negative price, etc.).
+/// </summary>
+public class InvalidEntityFieldException(string entity, string fieldName, string reason)
     : BusinessRuleException(
-        $"Invalid field '{fieldName}' for entity '{entityName}': {reason}.",
+        $"{entity}.{fieldName} is invalid: {reason}.",
         "INVALID_ENTITY_FIELD")
 {
-    public string EntityName { get; } = entityName;
+    public string Entity { get; } = entity;
     public string FieldName { get; } = fieldName;
 }

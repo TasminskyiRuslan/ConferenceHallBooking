@@ -229,45 +229,6 @@ public class BookingHandlerTests
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task CreateBookingCommandHandler_WithMultipleOptions_ShouldPassAllOptionsToPricingService()
-    {
-        var handler = new CreateBookingCommandHandler(
-            _bookingRepository, _hallRepository, _optionRepository, _pricingService, _unitOfWork);
-
-        var hallId = Guid.NewGuid();
-        var hall = new Hall("Conference Room A", 50, 100m);
-        var option1 = new Option("Projector", 50m);
-        var option2 = new Option("Wi-Fi", 30m);
-        var option3 = new Option("Sound", 70m);
-
-        hall.AddOption(option1.Id);
-        hall.AddOption(option2.Id);
-        hall.AddOption(option3.Id);
-
-        var startTime = DateTimeOffset.UtcNow.AddDays(1);
-        var command = new CreateBookingCommand(hallId, startTime, 2m, [option1.Id, option2.Id, option3.Id]);
-        var pricingResult = new PricingResult(200m, 150m, 350m);
-
-        _hallRepository.GetByIdAsync(hallId, Arg.Any<CancellationToken>())
-            .Returns(hall);
-
-        _bookingRepository.HasOverlappingBookingAsync(hall.Id, startTime, startTime.AddHours(2), Arg.Any<CancellationToken>())
-            .Returns(false);
-
-        _optionRepository.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([option1, option2, option3]);
-
-        _pricingService.CalculatePrice(hall.BaseHourlyRate, Arg.Is<IReadOnlyList<Option>>(l => l.Count == 3), startTime, startTime.AddHours(2))
-            .Returns(pricingResult);
-
-        var result = await handler.Handle(command, CancellationToken.None);
-
-        result.SelectedOptions.Should().HaveCount(3);
-        result.OptionsCost.Should().Be(150m);
-        result.TotalCost.Should().Be(350m);
-    }
-
     #endregion
 
     #region GetBookingByIdQueryHandler

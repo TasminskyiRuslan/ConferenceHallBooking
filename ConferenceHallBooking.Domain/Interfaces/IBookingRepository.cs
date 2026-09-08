@@ -16,5 +16,10 @@ public interface IBookingRepository
         Guid hallId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Booking>> GetByDateRangeAsync(
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(Booking booking, CancellationToken cancellationToken = default);
 }

@@ -1,10 +1,12 @@
 namespace ConferenceHallBooking.Domain.Exceptions;
 
-public class HallOptionNotSupportedException(Guid hallId, IEnumerable<Guid> optionIds)
+/// <summary>
+/// Thrown when a booking references options that are not supported by the selected hall.
+/// </summary>
+public class HallOptionNotSupportedException(Guid hallId, IReadOnlyCollection<Guid> unsupportedOptionIds)
     : BusinessRuleException(
-        $"One or more selected options are not available for conference hall '{hallId}'. Unsupported option IDs: [{string.Join(", ", optionIds)}].",
+        $"Hall {hallId} does not support options: {string.Join(", ", unsupportedOptionIds)}.",
         "HALL_OPTION_NOT_SUPPORTED")
 {
-    public Guid HallId { get; } = hallId;
-    public IReadOnlyCollection<Guid> OptionIds { get; } = optionIds.ToList().AsReadOnly();
+    public IReadOnlyCollection<Guid> UnsupportedOptionIds { get; } = unsupportedOptionIds;
 }

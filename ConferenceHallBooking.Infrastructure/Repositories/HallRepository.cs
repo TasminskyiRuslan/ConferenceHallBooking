@@ -15,6 +15,11 @@ public class HallRepository(AppDbContext context) : IHallRepository
             .FirstOrDefaultAsync(h => h.Id == id, cancellationToken);
     }
 
+    public async Task<bool> ExistsByNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        return await context.Halls.AnyAsync(h => h.Name == name, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Hall>> GetAvailableHallsAsync(
         DateTimeOffset startTime,
         DateTimeOffset endTime,
@@ -43,5 +48,16 @@ public class HallRepository(AppDbContext context) : IHallRepository
     public void Delete(Hall hall)
     {
         context.Halls.Remove(hall);
+    }
+
+    public async Task<IReadOnlyList<Hall>> GetAllWithBookingsAsync(
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.Halls
+            .AsNoTracking()
+            .Include(h => h.Bookings.Where(b => b.EndTime > from && b.StartTime < to))
+            .ToListAsync(cancellationToken);
     }
 }

@@ -1,5 +1,4 @@
 using ConferenceHallBooking.Application.DTOs.Halls;
-using ConferenceHallBooking.Application.Extensions;
 using ConferenceHallBooking.Application.Features.Halls.Commands;
 using ConferenceHallBooking.Application.Mappers;
 using ConferenceHallBooking.Domain.Entities;
@@ -19,9 +18,14 @@ public class UpdateHallCommandHandler(
         var hall = await hallRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException<Hall>(request.Id.ToString());
 
+        if (hall.Name != request.Name && await hallRepository.ExistsByNameAsync(request.Name, cancellationToken))
+        {
+            throw new HallNameAlreadyExistsException(request.Name);
+        }
+
         hall.Update(request.Name, request.Capacity, request.BaseHourlyRate);
 
-        await SynchronizeOptionsAsync(hall, request.OptionIds, cancellationToken);
+        await SynchronizeOptionsAsync(hall, request.Options, cancellationToken);
 
         hallRepository.Update(hall);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -32,11 +36,28 @@ public class UpdateHallCommandHandler(
         return HallMapper.MapToResponse(updated);
     }
 
-    private async Task SynchronizeOptionsAsync(Hall hall, IEnumerable<Guid>? targetOptionIds, CancellationToken cancellationToken)
+    private async Task SynchronizeOptionsAsync(Hall hall, List<DTOs.Options.InlineOption>? targetOptions, CancellationToken cancellationToken)
     {
-        var desiredIds = new HashSet<Guid>(targetOptionIds ?? []);
+        var desiredIds = new HashSet<Guid>();
 
-        await optionRepository.GetByIdsOrThrowAsync(desiredIds, cancellationToken);
+        if (targetOptions is { Count: > 0 })
+        {
+            foreach (var inline in targetOptions)
+            {
+                var existing = await optionRepository.GetByNameAsync(inline.Name, cancellationToken);
+
+                if (existing is not null)
+                {
+                    desiredIds.Add(existing.Id);
+                }
+                else
+                {
+                    var option = new Option(inline.Name, inline.Price);
+                    await optionRepository.AddAsync(option, cancellationToken);
+                    desiredIds.Add(option.Id);
+                }
+            }
+        }
 
         var currentIds = new HashSet<Guid>(hall.HallOptions.Select(ho => ho.OptionId));
 

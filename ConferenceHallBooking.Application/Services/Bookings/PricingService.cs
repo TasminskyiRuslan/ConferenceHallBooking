@@ -7,8 +7,29 @@ using Microsoft.Extensions.Options;
 
 namespace ConferenceHallBooking.Application.Services.Bookings;
 
+/// <summary>
+/// Calculates booking costs using time-based pricing rules.
+/// 
+/// The algorithm works by splitting the booking time into segments at rule boundaries,
+/// then applying the appropriate multiplier to each segment. For example, a booking
+/// from 10:00 to 16:00 with a peak rule at 12:00-14:00 becomes:
+///   10:00-12:00 (standard) + 12:00-14:00 (peak +15%) + 14:00-16:00 (standard).
+/// 
+/// Rules are defined in appsettings.json under PricingSettings.Rules.
+/// If no rule matches a time slot, the base rate (multiplier 1.0) is used.
+/// </summary>
 public class PricingService(IOptions<PricingSettings> settings) : IPricingService
 {
+    /// <summary>
+    /// Calculates the total cost of a booking based on time-of-day pricing rules.
+    /// </summary>
+    /// <param name="baseHourlyRate">Hall's base hourly rate in UAH.</param>
+    /// <param name="selectedOptions">Services chosen (each adds its fixed price).</param>
+    /// <param name="startTime">Booking start.</param>
+    /// <param name="endTime">Booking end.</param>
+    /// <returns>Breakdown of hall cost, options cost, and total cost.</returns>
+    /// <exception cref="InvalidBookingTimeException">Thrown when endTime &lt;= startTime.</exception>
+    /// <exception cref="InvalidBaseHourlyRateException">Thrown when rate &lt;= 0.</exception>
     public PricingResult CalculatePrice(
         decimal baseHourlyRate,
         IEnumerable<Option>? selectedOptions,
@@ -37,6 +58,9 @@ public class PricingService(IOptions<PricingSettings> settings) : IPricingServic
         return new PricingResult(roundedHallCost, roundedOptionsCost, roundedTotalCost);
     }
 
+    /// <summary>
+    /// Sums the cost of each time segment using the appropriate multiplier.
+    /// </summary>
     private static decimal CalculateHallCost(
         decimal baseHourlyRate,
         IReadOnlyList<DateTimeOffset> boundaryPoints,
@@ -59,6 +83,9 @@ public class PricingService(IOptions<PricingSettings> settings) : IPricingServic
         return hallCost;
     }
 
+    /// <summary>
+    /// Determines the multiplier for a time segment by evaluating its midpoint against the rules.
+    /// </summary>
     private static decimal GetMultiplierForSegment(
         DateTimeOffset segmentStart,
         DateTimeOffset segmentEnd,
@@ -72,6 +99,11 @@ public class PricingService(IOptions<PricingSettings> settings) : IPricingServic
         return GetMultiplierForTime(time, rules);
     }
 
+    /// <summary>
+    /// Generates boundary points where pricing rules change.
+    /// For each day in the booking range, inserts rule start/end times that fall within the range.
+    /// This allows the algorithm to split bookings across multiple pricing periods.
+    /// </summary>
     private static List<DateTimeOffset> GetBoundaryPoints(
         DateTimeOffset start,
         DateTimeOffset end,
@@ -99,6 +131,7 @@ public class PricingService(IOptions<PricingSettings> settings) : IPricingServic
         return [.. points.OrderBy(point => point)];
     }
 
+    /// <summary>Adds a boundary point if it falls strictly within the booking range.</summary>
     private static void AddBoundaryIfInRange(
         HashSet<DateTimeOffset> points,
         DateTimeOffset rangeStart,
@@ -114,6 +147,11 @@ public class PricingService(IOptions<PricingSettings> settings) : IPricingServic
         }
     }
 
+    /// <summary>
+    /// Returns the multiplier for a specific time of day.
+    /// Uses FirstOrDefault — first matching rule wins. Default is 1.0 (base rate).
+    /// Range semantics: [StartTime, EndTime) — inclusive start, exclusive end.
+    /// </summary>
     private static decimal GetMultiplierForTime(TimeOnly time, IReadOnlyList<PricingRule> rules)
     {
         var rule = rules

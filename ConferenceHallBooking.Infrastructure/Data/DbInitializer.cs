@@ -1,4 +1,5 @@
-﻿using ConferenceHallBooking.Domain.Entities;
+﻿using ConferenceHallBooking.Application.Interfaces;
+using ConferenceHallBooking.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -26,8 +27,8 @@ public class DbInitializer(AppDbContext context, ILogger<DbInitializer> logger) 
             var sound = new Option("Звук", 700m);
 
             var hallA = new Hall("Зал А", 50, 2000m);
-            var hallB = new Hall("Зал В", 100, 3500m);
-            var hallC = new Hall("Зал С", 30, 1500m);
+            var hallB = new Hall("Зал B", 100, 3500m);
+            var hallC = new Hall("Зал C", 30, 1500m);
 
             await context.Options.AddRangeAsync([projector, wifi, sound], cancellationToken);
             await context.Halls.AddRangeAsync([hallA, hallB, hallC], cancellationToken);

@@ -27,6 +27,23 @@ public class CreateBookingCommandValidatorTests
     }
 
     [Theory]
+    [InlineData(25)]
+    [InlineData(48)]
+    public async Task Validate_WhenDurationExceeds24Hours_ShouldHaveValidationError(decimal invalidDuration)
+    {
+        var command = new CreateBookingCommand(
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow.AddDays(1),
+            invalidDuration,
+            null);
+
+        var result = await _validator.ValidateAsync(command);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateBookingCommand.DurationHours));
+    }
+
+    [Theory]
     [InlineData(1)]
     [InlineData(2.5)]
     [InlineData(8)]

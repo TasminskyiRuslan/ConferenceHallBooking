@@ -1,9 +1,12 @@
 namespace ConferenceHallBooking.Domain.Exceptions;
 
-public class OptionsNotFoundException(IEnumerable<Guid> optionIds)
+/// <summary>
+/// Thrown when requested option IDs do not exist in the database.
+/// </summary>
+public class OptionsNotFoundException(IReadOnlyCollection<Guid> missingIds)
     : BusinessRuleException(
-        $"One or more specified options do not exist. Requested IDs: [{string.Join(", ", optionIds)}].",
+        $"Options not found: {string.Join(", ", missingIds)}.",
         "OPTIONS_NOT_FOUND")
 {
-    public IReadOnlyCollection<Guid> OptionIds { get; } = optionIds.ToList().AsReadOnly();
+    public IReadOnlyCollection<Guid> MissingIds { get; } = missingIds;
 }
