@@ -62,10 +62,10 @@ public class OptionController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
         Guid id,
-        [FromBody] UpdateOptionCommand command,
+        [FromBody] UpdateOptionRequest request,
         CancellationToken cancellationToken)
     {
-        var option = await sender.Send(command with { Id = id }, cancellationToken);
+        var option = await sender.Send(new UpdateOptionCommand(id, request.Name, request.Price), cancellationToken);
         return Ok(option);
     }
 
